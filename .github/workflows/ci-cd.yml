@@ -1,0 +1,247 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  schedule:
+    # Run weekly security scans
+    - cron: '0 8 * * 1'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:14
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_USER: postgres
+          POSTGRES_DB: test_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+        cache: 'pip'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pytest-xdist
+
+    - name: Run linters
+      run: |
+        black . --check
+        isort . --check
+        ruff check .
+
+    - name: Run tests
+      run: |
+        pytest --cov=. --cov-report=xml --xdist auto
+      env:
+        DATABASE_URL: postgres://postgres:postgres@localhost:5432/test_db
+        REDIS_URL: redis://localhost:6379/0
+        SECRET_KEY: test_secret_key
+        DEBUG: 'True'
+        # Add email adapter test env vars
+        ENCRYPTION_KEY: test_encryption_key
+
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./coverage.xml
+        fail_ci_if_error: true
+
+  security-scan:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Install security scanning tools
+      run: |
+        python -m pip install --upgrade pip
+        pip install bandit safety pip-audit
+
+    - name: Run Bandit (Python security scanner)
+      run: |
+        bandit -r . -x ./tests,./venv -f json -o bandit-results.json
+
+    - name: Run Safety check for vulnerable dependencies
+      run: |
+        safety check -r requirements.txt --json > safety-results.json || true
+
+    - name: Run pip-audit for dependency vulnerabilities
+      run: |
+        pip-audit -r requirements.txt --format json > pip-audit-results.json || true
+
+    - name: Check for secrets in code
+      uses: gitleaks/gitleaks-action@v2
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Upload security scan results
+      uses: actions/upload-artifact@v3
+      with:
+        name: security-scan-results
+        path: |
+          bandit-results.json
+          safety-results.json
+          pip-audit-results.json
+
+  build-backend:
+    needs: test
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
+
+    - name: Login to Docker Hub
+      uses: docker/login-action@v2
+      with:
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+    - name: Build and push backend
+      uses: docker/build-push-action@v4
+      with:
+        context: .
+        file: ./docker/backend/Dockerfile
+        push: true
+        tags: ${{ secrets.DOCKERHUB_USERNAME }}/omnichannel-backend:${{ github.sha }}
+
+  build-frontend:
+    needs: test
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: 18
+        cache: 'npm'
+        cache-dependency-path: './frontend/agent-dashboard/package-lock.json'
+
+    - name: Install dependencies
+      run: cd frontend/agent-dashboard && npm ci
+
+    - name: Build frontend
+      run: cd frontend/agent-dashboard && npm run build
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
+
+    - name: Login to Docker Hub
+      uses: docker/login-action@v2
+      with:
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+    - name: Build and push frontend
+      uses: docker/build-push-action@v4
+      with:
+        context: ./frontend/agent-dashboard
+        file: ./docker/frontend/Dockerfile
+        push: true
+        tags: ${{ secrets.DOCKERHUB_USERNAME }}/omnichannel-frontend:${{ github.sha }}
+
+  deploy:
+    needs: [build-backend, build-frontend, security-scan]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up SSH
+      uses: webfactory/ssh-agent@v0.7.0
+      with:
+        ssh-private-key: ${{ secrets.DEPLOY_SSH_KEY }}
+
+    - name: Setup environment variables
+      run: |
+        echo "Setting up environment files for production"
+        # Copy template files and replace placeholders with secrets
+        cp .env.prod.template .env.prod
+        cp .env.prod.db.template .env.prod.db
+
+        # Replace placeholders with secrets
+        sed -i "s/set_secure_random_secret_key_here/${{ secrets.DJANGO_SECRET_KEY }}/g" .env.prod
+        sed -i "s/set_secure_encryption_key_here/${{ secrets.ENCRYPTION_KEY }}/g" .env.prod
+        sed -i "s/set_secure_redis_password_here/${{ secrets.REDIS_PASSWORD }}/g" .env.prod
+        sed -i "s/set_secure_postgres_password_here/${{ secrets.POSTGRES_PASSWORD }}/g" .env.prod.db
+        sed -i "s/your_sentry_dsn_here/${{ secrets.SENTRY_DSN }}/g" .env.prod
+
+    - name: Copy files to production server
+      run: |
+        scp -o StrictHostKeyChecking=no -r docker-compose.prod.yml \
+        Dockerfile.prod entrypoint.sh nginx .env.prod .env.prod.db \
+        ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:${{ secrets.DEPLOY_PATH }}
+
+    - name: Deploy with Docker Compose
+      run: |
+        ssh -o StrictHostKeyChecking=no ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} \
+        "cd ${{ secrets.DEPLOY_PATH }} && \
+        docker-compose -f docker-compose.prod.yml down && \
+        docker-compose -f docker-compose.prod.yml pull && \
+        docker-compose -f docker-compose.prod.yml up -d && \
+        docker-compose -f docker-compose.prod.yml exec -T web python manage.py migrate --noinput && \
+        docker-compose -f docker-compose.prod.yml exec -T web python manage.py collectstatic --noinput"
+
+    - name: Verify deployment
+      run: |
+        ssh -o StrictHostKeyChecking=no ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} \
+        "cd ${{ secrets.DEPLOY_PATH }} && \
+        docker-compose -f docker-compose.prod.yml ps && \
+        docker-compose -f docker-compose.prod.yml logs --tail=50 web"
+
+    - name: Run data migration for encrypted credentials
+      if: github.ref == 'refs/heads/main' && contains(github.event.head_commit.message, 'deploy-encrypt-creds')
+      run: |
+        ssh -o StrictHostKeyChecking=no ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} \
+        "cd ${{ secrets.DEPLOY_PATH }} && \
+        docker-compose -f docker-compose.prod.yml exec -T web python manage.py encrypt_credentials --batch-size 100"
+
+    - name: Send deployment notification
+      uses: rtCamp/action-slack-notify@v2
+      env:
+        SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+        SLACK_CHANNEL: deployments
+        SLACK_COLOR: ${{ job.status }}
+        SLACK_TITLE: Production Deployment
+        SLACK_MESSAGE: 'Deployment to production complete :rocket:'
+        SLACK_FOOTER: 'Email Integration App | SHA: ${{ github.sha }}'

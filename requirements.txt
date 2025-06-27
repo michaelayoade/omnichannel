@@ -1,0 +1,57 @@
+# Django & DRF
+django==4.2.22
+djangorestframework==3.15.2
+drf-spectacular==0.26.5
+django-cryptography==1.1
+django-cors-headers==4.3.1
+django-extensions==3.2.3
+django-filter==23.5
+
+# Async & Task Processing
+celery==5.3.4
+redis==5.0.1
+
+# WebSocket support
+channels==4.0.0
+channels-redis==4.1.0
+daphne>=4.0.0
+
+# Database & storage
+psycopg2-binary==2.9.9
+whitenoise==6.6.0
+jsonfield==3.1.0
+
+# Authentication & Security
+djangorestframework-simplejwt==5.3.1
+cryptography==42.0.5
+requests==2.32.4
+
+# Utilities
+python-decouple==3.8
+pillow==10.3.0
+
+# Quality & Security
+bandit==1.7.5
+black==24.4.2
+ruff==0.4.4
+pre-commit==3.7.1
+pip-audit==2.7.3
+safety==3.2.3
+
+# Development
+ipython==8.14.0
+
+# Deployment
+gunicorn==23.0.0
+
+# Monitoring & Logging
+sentry-sdk==1.40.6
+
+# Testing & Quality Tools
+coverage==7.2.7
+factory-boy==3.3.0
+pytest==7.2.2
+pytest-cov==4.1.0
+pytest-django==4.5.2
+pytest-mock==3.10.0
+responses==0.23.3

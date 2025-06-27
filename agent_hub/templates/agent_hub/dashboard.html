@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agent Dashboard</title>
+    <style>
+        body { font-family: sans-serif; }
+        #status-log, #notification-log {
+            height: 200px;
+            overflow-y: scroll;
+            border: 1px solid #ccc;
+            padding: 10px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Agent Dashboard</h1>
+
+    <h2>Agent Status Updates</h2>
+    <div id="status-log"></div>
+
+    <h2>Notifications</h2>
+    <div id="notification-log"></div>
+
+    {% load static %}
+    <script src="{% static 'agent_hub/js/dashboard.js' %}"></script>
+</body>
+</html>
