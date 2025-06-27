@@ -51,7 +51,7 @@ class FacebookPageAdmin(admin.ModelAdmin):
                     "page_category",
                     "page_description",
                     "status",
-                )
+                ),
             },
         ),
         (
@@ -143,7 +143,7 @@ class FacebookUserAdmin(admin.ModelAdmin):
                     "locale",
                     "timezone",
                     "gender",
-                )
+                ),
             },
         ),
         ("Customer Linking", {"fields": ("customer",)}),
@@ -208,7 +208,7 @@ class FacebookMessageAdmin(admin.ModelAdmin):
                     "direction",
                     "message_type",
                     "status",
-                )
+                ),
             },
         ),
         ("Content", {"fields": ("text", "quick_reply_payload")}),
@@ -263,7 +263,7 @@ class FacebookMessageAdmin(admin.ModelAdmin):
     def attachment_payload_display(self, obj):
         if obj.attachment_payload:
             return format_html(
-                "<pre>{}</pre>", json.dumps(obj.attachment_payload, indent=2)
+                "<pre>{}</pre>", json.dumps(obj.attachment_payload, indent=2),
             )
         return "-"
 
@@ -296,7 +296,7 @@ class FacebookTemplateAdmin(admin.ModelAdmin):
                     "page",
                     "is_active",
                     "is_global",
-                )
+                ),
             },
         ),
         ("Template Data", {"fields": ("template_data", "variables")}),
@@ -365,7 +365,7 @@ class FacebookWebhookEventAdmin(admin.ModelAdmin):
     def processed_data_display(self, obj):
         if obj.processed_data:
             return format_html(
-                "<pre>{}</pre>", json.dumps(obj.processed_data, indent=2)
+                "<pre>{}</pre>", json.dumps(obj.processed_data, indent=2),
             )
         return "-"
 
@@ -406,7 +406,7 @@ class FacebookConversationFlowAdmin(admin.ModelAdmin):
                     "page",
                     "is_active",
                     "priority",
-                )
+                ),
             },
         ),
         ("Trigger Configuration", {"fields": ("trigger_type", "trigger_value")}),
@@ -470,7 +470,7 @@ class FacebookUserStateAdmin(admin.ModelAdmin):
                     "current_flow",
                     "current_step",
                     "last_message_at",
-                )
+                ),
             },
         ),
         (
@@ -507,7 +507,7 @@ class FacebookUserStateAdmin(admin.ModelAdmin):
     def context_variables_display(self, obj):
         if obj.context_variables:
             return format_html(
-                "<pre>{}</pre>", json.dumps(obj.context_variables, indent=2)
+                "<pre>{}</pre>", json.dumps(obj.context_variables, indent=2),
             )
         return "-"
 
@@ -516,7 +516,7 @@ class FacebookUserStateAdmin(admin.ModelAdmin):
     def handover_metadata_display(self, obj):
         if obj.handover_metadata:
             return format_html(
-                "<pre>{}</pre>", json.dumps(obj.handover_metadata, indent=2)
+                "<pre>{}</pre>", json.dumps(obj.handover_metadata, indent=2),
             )
         return "-"
 

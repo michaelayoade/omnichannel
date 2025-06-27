@@ -18,7 +18,7 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument(
-            "--page-id", type=str, help="Specific Facebook page to monitor"
+            "--page-id", type=str, help="Specific Facebook page to monitor",
         )
 
         parser.add_argument(
@@ -37,7 +37,7 @@ class Command(BaseCommand):
         )
 
         parser.add_argument(
-            "--show-errors", action="store_true", help="Show detailed error information"
+            "--show-errors", action="store_true", help="Show detailed error information",
         )
 
         parser.add_argument(
@@ -47,7 +47,7 @@ class Command(BaseCommand):
         )
 
         parser.add_argument(
-            "--show-users", action="store_true", help="Show user engagement statistics"
+            "--show-users", action="store_true", help="Show user engagement statistics",
         )
 
     def handle(self, *args, **options):
@@ -71,11 +71,10 @@ class Command(BaseCommand):
 
     def _output_table(self, pages):
         """Output monitoring data in table format."""
-
         self.stdout.write(
             self.style.SUCCESS(
-                f'\\nFacebook Messenger Monitor - Last {self.options["hours"]} hours'
-            )
+                f'\\nFacebook Messenger Monitor - Last {self.options["hours"]} hours',
+            ),
         )
         self.stdout.write("=" * 80)
 
@@ -97,7 +96,6 @@ class Command(BaseCommand):
 
     def _output_json(self, pages):
         """Output monitoring data in JSON format."""
-
         data = {
             "timestamp": timezone.now().isoformat(),
             "time_window_hours": self.options["hours"],
@@ -127,7 +125,6 @@ class Command(BaseCommand):
 
     def _show_page_summary(self, page):
         """Show page summary information."""
-
         status_icon = "🟢" if page.is_healthy else "🔴"
         webhook_icon = "✓" if page.webhook_subscribed else "✗"
 
@@ -135,13 +132,13 @@ class Command(BaseCommand):
         self.stdout.write(f"   ID: {page.page_id}")
         self.stdout.write(f"   Status: {status_icon} {page.get_status_display()}")
         self.stdout.write(
-            f'   Webhook: {webhook_icon} {"Subscribed" if page.webhook_subscribed else "Not Subscribed"}'
+            f'   Webhook: {webhook_icon} {"Subscribed" if page.webhook_subscribed else "Not Subscribed"}',
         )
 
         if page.last_health_check:
             time_since_check = timezone.now() - page.last_health_check
             self.stdout.write(
-                f"   Last Health Check: {self._format_duration(time_since_check)} ago"
+                f"   Last Health Check: {self._format_duration(time_since_check)} ago",
             )
         else:
             self.stdout.write("   Last Health Check: Never")
@@ -149,75 +146,71 @@ class Command(BaseCommand):
         if page.last_error_message:
             self.stdout.write(
                 self.style.WARNING(
-                    f"   ⚠️  Last Error: {page.last_error_message[:100]}..."
-                )
+                    f"   ⚠️  Last Error: {page.last_error_message[:100]}...",
+                ),
             )
 
     def _show_message_stats(self, page):
         """Show message statistics."""
-
         stats = self._get_message_stats(page)
 
         self.stdout.write(f'\\n💬 Messages (last {self.options["hours"]}h):')
         self.stdout.write(f'   Total: {stats["total"]}')
         self.stdout.write(
-            f'   Inbound: {stats["inbound"]} | Outbound: {stats["outbound"]}'
+            f'   Inbound: {stats["inbound"]} | Outbound: {stats["outbound"]}',
         )
         self.stdout.write(f'   Sent: {stats["sent"]} | Failed: {stats["failed"]}')
         self.stdout.write(
-            f'   Text: {stats["text"]} | Media: {stats["media"]} | Templates: {stats["templates"]}'
+            f'   Text: {stats["text"]} | Media: {stats["media"]} | Templates: {stats["templates"]}',
         )
 
         if stats["failed"] > 0:
             self.stdout.write(
-                self.style.WARNING(f'   ⚠️  {stats["failed"]} failed messages')
+                self.style.WARNING(f'   ⚠️  {stats["failed"]} failed messages'),
             )
 
     def _show_webhook_stats(self, page):
         """Show webhook statistics."""
-
         stats = self._get_webhook_stats(page)
 
         self.stdout.write(f'\\n🔗 Webhooks (last {self.options["hours"]}h):')
         self.stdout.write(f'   Total Events: {stats["total"]}')
         self.stdout.write(
-            f'   Processed: {stats["processed"]} | Failed: {stats["failed"]}'
+            f'   Processed: {stats["processed"]} | Failed: {stats["failed"]}',
         )
         self.stdout.write(
-            f'   Messages: {stats["message_events"]} | Postbacks: {stats["postback_events"]}'
+            f'   Messages: {stats["message_events"]} | Postbacks: {stats["postback_events"]}',
         )
         self.stdout.write(
-            f'   Deliveries: {stats["delivery_events"]} | Reads: {stats["read_events"]}'
+            f'   Deliveries: {stats["delivery_events"]} | Reads: {stats["read_events"]}',
         )
 
         if stats["failed"] > 0:
             self.stdout.write(
-                self.style.WARNING(f'   ⚠️  {stats["failed"]} failed webhook events')
+                self.style.WARNING(f'   ⚠️  {stats["failed"]} failed webhook events'),
             )
 
     def _show_user_stats(self, page):
         """Show user statistics."""
-
         stats = self._get_user_stats(page)
 
         self.stdout.write("\\n👥 Users:")
         self.stdout.write(f'   Total: {stats["total"]}')
         self.stdout.write(
-            f'   Active (last {self.options["hours"]}h): {stats["active"]}'
+            f'   Active (last {self.options["hours"]}h): {stats["active"]}',
         )
         self.stdout.write(f'   New (last {self.options["hours"]}h): {stats["new"]}')
         self.stdout.write(f'   Linked to Customers: {stats["linked_customers"]}')
 
     def _show_flow_stats(self, page):
         """Show conversation flow statistics."""
-
         stats = self._get_flow_stats(page)
 
         self.stdout.write("\\n🔄 Conversation Flows:")
         self.stdout.write(f'   Total Flows: {stats["total_flows"]}')
         self.stdout.write(f'   Active Flows: {stats["active_flows"]}')
         self.stdout.write(
-            f'   Flow Executions (last {self.options["hours"]}h): {stats["executions"]}'
+            f'   Flow Executions (last {self.options["hours"]}h): {stats["executions"]}',
         )
         self.stdout.write(f'   Completion Rate: {stats["completion_rate"]:.1f}%')
 
@@ -228,21 +221,19 @@ class Command(BaseCommand):
 
     def _show_error_details(self, page):
         """Show detailed error information."""
-
         errors = self._get_error_info(page)
 
         if errors["recent_errors"]:
             self.stdout.write("\\n❌ Recent Errors:")
             for error in errors["recent_errors"][:5]:
                 self.stdout.write(
-                    f'   • {error["timestamp"]}: {error["message"][:100]}...'
+                    f'   • {error["timestamp"]}: {error["message"][:100]}...',
                 )
 
     def _get_message_stats(self, page):
         """Get message statistics for a page."""
-
         messages = FacebookMessage.objects.filter(
-            page=page, created_at__gte=self.time_window
+            page=page, created_at__gte=self.time_window,
         )
 
         total = messages.count()
@@ -252,7 +243,7 @@ class Command(BaseCommand):
         failed = messages.filter(status="failed").count()
         text = messages.filter(message_type="text").count()
         media = messages.filter(
-            message_type__in=["image", "video", "audio", "file"]
+            message_type__in=["image", "video", "audio", "file"],
         ).count()
         templates = messages.filter(message_type="template").count()
 
@@ -269,9 +260,8 @@ class Command(BaseCommand):
 
     def _get_webhook_stats(self, page):
         """Get webhook statistics for a page."""
-
         events = FacebookWebhookEvent.objects.filter(
-            page=page, created_at__gte=self.time_window
+            page=page, created_at__gte=self.time_window,
         )
 
         total = events.count()
@@ -294,7 +284,6 @@ class Command(BaseCommand):
 
     def _get_user_stats(self, page):
         """Get user statistics for a page."""
-
         all_users = FacebookUser.objects.filter(page=page)
         active_users = all_users.filter(last_interaction_at__gte=self.time_window)
         new_users = all_users.filter(created_at__gte=self.time_window)
@@ -309,7 +298,6 @@ class Command(BaseCommand):
 
     def _get_flow_stats(self, page):
         """Get conversation flow statistics for a page."""
-
         all_flows = FacebookConversationFlow.objects.filter(page=page)
         active_flows = all_flows.filter(is_active=True)
 
@@ -339,15 +327,14 @@ class Command(BaseCommand):
 
     def _get_error_info(self, page):
         """Get error information for a page."""
-
         # Failed webhook events
         failed_webhooks = FacebookWebhookEvent.objects.filter(
-            page=page, status="failed", created_at__gte=self.time_window
+            page=page, status="failed", created_at__gte=self.time_window,
         ).order_by("-created_at")
 
         # Failed messages
         failed_messages = FacebookMessage.objects.filter(
-            page=page, status="failed", created_at__gte=self.time_window
+            page=page, status="failed", created_at__gte=self.time_window,
         ).order_by("-created_at")
 
         errors = []
@@ -359,7 +346,7 @@ class Command(BaseCommand):
                     "type": "webhook",
                     "timestamp": event.created_at.isoformat(),
                     "message": event.error_message,
-                }
+                },
             )
 
         # Add message errors
@@ -369,7 +356,7 @@ class Command(BaseCommand):
                     "type": "message",
                     "timestamp": message.created_at.isoformat(),
                     "message": message.error_message,
-                }
+                },
             )
 
         # Sort by timestamp
@@ -383,7 +370,6 @@ class Command(BaseCommand):
 
     def _format_duration(self, duration):
         """Format timedelta as human-readable string."""
-
         total_seconds = int(duration.total_seconds())
 
         if total_seconds < 60:

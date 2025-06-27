@@ -5,7 +5,6 @@ import re
 from datetime import datetime
 from email.header import decode_header
 from email.utils import make_msgid, parseaddr, parsedate_to_datetime
-from typing import Dict, List, Optional, Tuple
 
 from django.utils import timezone
 
@@ -13,8 +12,7 @@ logger = logging.getLogger(__name__)
 
 
 class EmailParser:
-    """
-    Utility class for parsing email messages and extracting information.
+    """Utility class for parsing email messages and extracting information.
     Handles various email formats, encodings, and content types.
     """
 
@@ -43,15 +41,17 @@ class EmailParser:
             ],
         }
 
-    def parse_email(self, email_message: email.message.Message) -> Dict:
-        """
-        Parse an email message and extract all relevant information.
+    def parse_email(self, email_message: email.message.Message) -> dict:
+        """Parse an email message and extract all relevant information.
 
         Args:
+        ----
             email_message: Email message object
 
         Returns:
+        -------
             Dictionary containing parsed email data
+
         """
         try:
             parsed_data = {
@@ -67,11 +67,11 @@ class EmailParser:
                 "cc_emails": self._parse_email_list(email_message.get("Cc", "")),
                 "bcc_emails": self._parse_email_list(email_message.get("Bcc", "")),
                 "reply_to": self._parse_email_address(
-                    email_message.get("Reply-To", "")
+                    email_message.get("Reply-To", ""),
                 )[1],
                 "date": self._parse_date(email_message.get("Date")),
                 "in_reply_to": self._clean_message_id(
-                    email_message.get("In-Reply-To", "")
+                    email_message.get("In-Reply-To", ""),
                 ),
                 "references": email_message.get("References", ""),
                 "headers": self._extract_headers(email_message),
@@ -125,15 +125,17 @@ class EmailParser:
             logger.warning(f"Error decoding header '{header_value}': {e}")
             return header_value
 
-    def _parse_email_address(self, address_string: str) -> Tuple[str, str]:
-        """
-        Parse email address string and return (name, email).
+    def _parse_email_address(self, address_string: str) -> tuple[str, str]:
+        """Parse email address string and return (name, email).
 
         Args:
+        ----
             address_string: Email address string like "John Doe <john@example.com>"
 
         Returns:
+        -------
             Tuple of (name, email_address)
+
         """
         if not address_string:
             return "", ""
@@ -155,7 +157,7 @@ class EmailParser:
             logger.warning(f"Error parsing email address '{address_string}': {e}")
             return "", address_string
 
-    def _parse_email_list(self, address_list: str) -> List[str]:
+    def _parse_email_list(self, address_list: str) -> list[str]:
         """Parse comma-separated list of email addresses."""
         if not address_list:
             return []
@@ -195,7 +197,7 @@ class EmailParser:
             logger.warning(f"Error parsing date '{date_string}': {e}")
             return timezone.now()
 
-    def _extract_headers(self, email_message: email.message.Message) -> Dict:
+    def _extract_headers(self, email_message: email.message.Message) -> dict:
         """Extract all email headers as dictionary."""
         headers = {}
 
@@ -204,7 +206,7 @@ class EmailParser:
 
         return headers
 
-    def _extract_content(self, email_message: email.message.Message, parsed_data: Dict):
+    def _extract_content(self, email_message: email.message.Message, parsed_data: dict):
         """Extract email body content and attachments."""
         if email_message.is_multipart():
             self._process_multipart(email_message, parsed_data)
@@ -212,7 +214,7 @@ class EmailParser:
             self._process_single_part(email_message, parsed_data)
 
     def _process_multipart(
-        self, email_message: email.message.Message, parsed_data: Dict
+        self, email_message: email.message.Message, parsed_data: dict,
     ):
         """Process multipart email message."""
         for part in email_message.walk():
@@ -233,7 +235,7 @@ class EmailParser:
                 self._process_inline_attachment(part, parsed_data)
 
     def _process_single_part(
-        self, email_message: email.message.Message, parsed_data: Dict
+        self, email_message: email.message.Message, parsed_data: dict,
     ):
         """Process single-part email message."""
         content_type = email_message.get_content_type()
@@ -244,7 +246,7 @@ class EmailParser:
             self._extract_text_content(email_message, parsed_data, "html_body")
 
     def _extract_text_content(
-        self, part: email.message.Message, parsed_data: Dict, body_type: str
+        self, part: email.message.Message, parsed_data: dict, body_type: str,
     ):
         """Extract text content from email part."""
         try:
@@ -284,7 +286,7 @@ class EmailParser:
 
         return content.strip()
 
-    def _process_attachment(self, part: email.message.Message, parsed_data: Dict):
+    def _process_attachment(self, part: email.message.Message, parsed_data: dict):
         """Process email attachment."""
         try:
             filename = part.get_filename()
@@ -313,7 +315,7 @@ class EmailParser:
             logger.warning(f"Error processing attachment: {e}")
 
     def _process_inline_attachment(
-        self, part: email.message.Message, parsed_data: Dict
+        self, part: email.message.Message, parsed_data: dict,
     ):
         """Process inline attachment (e.g., embedded images)."""
         try:
@@ -338,7 +340,7 @@ class EmailParser:
         except Exception as e:
             logger.warning(f"Error processing inline attachment: {e}")
 
-    def _extract_customer_info(self, parsed_data: Dict) -> Dict:
+    def _extract_customer_info(self, parsed_data: dict) -> dict:
         """Extract customer information from email content."""
         customer_info = {}
 
@@ -390,8 +392,7 @@ class EmailParser:
 
 
 class EmailThreadParser:
-    """
-    Utility class for detecting and managing email threads.
+    """Utility class for detecting and managing email threads.
     Groups related emails into conversation threads.
     """
 
@@ -403,18 +404,20 @@ class EmailThreadParser:
         ]
 
     def generate_thread_id(
-        self, subject: str, in_reply_to: str = "", references: str = ""
+        self, subject: str, in_reply_to: str = "", references: str = "",
     ) -> str:
-        """
-        Generate a thread ID for grouping related emails.
+        """Generate a thread ID for grouping related emails.
 
         Args:
+        ----
             subject: Email subject
             in_reply_to: In-Reply-To header value
             references: References header value
 
         Returns:
+        -------
             Thread ID string
+
         """
         # If we have reply information, extract thread ID from references
         if in_reply_to or references:
@@ -431,8 +434,8 @@ class EmailThreadParser:
         return f"thread_{thread_id}"
 
     def _extract_thread_id_from_references(
-        self, in_reply_to: str, references: str
-    ) -> Optional[str]:
+        self, in_reply_to: str, references: str,
+    ) -> str | None:
         """Extract thread ID from existing message references."""
         # Look for existing thread IDs in references
         all_refs = f"{references} {in_reply_to}".strip()
@@ -473,16 +476,18 @@ class EmailThreadParser:
 
         return normalized or "no_subject"
 
-    def are_messages_in_same_thread(self, msg1_data: Dict, msg2_data: Dict) -> bool:
-        """
-        Determine if two messages belong to the same thread.
+    def are_messages_in_same_thread(self, msg1_data: dict, msg2_data: dict) -> bool:
+        """Determine if two messages belong to the same thread.
 
         Args:
+        ----
             msg1_data: First message parsed data
             msg2_data: Second message parsed data
 
         Returns:
+        -------
             True if messages are in same thread
+
         """
         # Check if either message references the other
         if self._messages_reference_each_other(msg1_data, msg2_data):
@@ -490,13 +495,13 @@ class EmailThreadParser:
 
         # Check if subjects are similar enough
         if self._subjects_are_similar(
-            msg1_data.get("subject", ""), msg2_data.get("subject", "")
+            msg1_data.get("subject", ""), msg2_data.get("subject", ""),
         ):
             return True
 
         return False
 
-    def _messages_reference_each_other(self, msg1_data: Dict, msg2_data: Dict) -> bool:
+    def _messages_reference_each_other(self, msg1_data: dict, msg2_data: dict) -> bool:
         """Check if messages reference each other through headers."""
         msg1_id = msg1_data.get("message_id", "")
         msg2_id = msg2_data.get("message_id", "")

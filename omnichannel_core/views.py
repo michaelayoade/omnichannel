@@ -1,6 +1,4 @@
-"""
-Custom authentication views for the omnichannel core.
-"""
+"""Custom authentication views for the omnichannel core."""
 
 from django.contrib.auth.views import LoginView
 from django.urls import reverse_lazy

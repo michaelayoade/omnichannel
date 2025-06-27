@@ -23,17 +23,14 @@ from .serializers import (
 
 
 class ConversationViewSet(viewsets.ModelViewSet):
-    """
-    API endpoint that allows conversations to be viewed or edited.
-    """
+    """API endpoint that allows conversations to be viewed or edited."""
 
     queryset = Conversation.objects.all()
     serializer_class = ConversationSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        """
-        This view should return a list of all the conversations
+        """This view should return a list of all the conversations
         for the currently authenticated user.
         """
         user = self.request.user
@@ -43,9 +40,7 @@ class ConversationViewSet(viewsets.ModelViewSet):
 
 
 class MessageViewSet(viewsets.ModelViewSet):
-    """
-    A viewset for viewing and creating messages within a conversation.
-    """
+    """A viewset for viewing and creating messages within a conversation."""
 
     serializer_class = MessageSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -56,7 +51,7 @@ class MessageViewSet(viewsets.ModelViewSet):
         if conversation_id:
             # Ensure the user has access to this conversation before showing messages.
             if Conversation.objects.filter(
-                id=conversation_id, assigned_agent__user=self.request.user
+                id=conversation_id, assigned_agent__user=self.request.user,
             ).exists():
                 return Message.objects.filter(conversation_id=conversation_id)
         return (
@@ -64,9 +59,7 @@ class MessageViewSet(viewsets.ModelViewSet):
         )  # Return no messages if no valid conversation is specified
 
     def perform_create(self, serializer):
-        """
-        Set the message direction to outbound and associate the agent.
-        """
+        """Set the message direction to outbound and associate the agent."""
         conversation = serializer.validated_data["conversation"]
         try:
             agent_profile = AgentProfile.objects.get(user=self.request.user)
@@ -80,28 +73,22 @@ class MessageViewSet(viewsets.ModelViewSet):
 
 
 class AgentProfileViewSet(viewsets.ReadOnlyModelViewSet):
-    """
-    A viewset for viewing and managing agent profiles.
-    """
+    """A viewset for viewing and managing agent profiles."""
 
     serializer_class = AgentProfileSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        """
-        This view should return the agent profile for the currently authenticated user.
-        """
+        """This view should return the agent profile for the currently authenticated user."""
         return AgentProfile.objects.filter(user=self.request.user)
 
     @action(detail=False, methods=["post"], url_path="set-status")
     def set_status(self, request):
-        """
-        Custom action to update the agent's status.
-        """
+        """Custom action to update the agent's status."""
         agent_profile = self.get_queryset().first()
         if not agent_profile:
             return Response(
-                {"error": "Agent profile not found."}, status=status.HTTP_404_NOT_FOUND
+                {"error": "Agent profile not found."}, status=status.HTTP_404_NOT_FOUND,
             )
 
         new_status = request.data.get("status")
@@ -115,44 +102,36 @@ class AgentProfileViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 class QuickReplyTemplateViewSet(viewsets.ReadOnlyModelViewSet):
-    """
-    A viewset for listing available quick reply templates.
-    """
+    """A viewset for listing available quick reply templates."""
 
     serializer_class = QuickReplyTemplateSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        """
-        This view should return a list of all the quick reply templates
+        """This view should return a list of all the quick reply templates
         for the currently authenticated user.
         """
         return QuickReplyTemplate.objects.filter(agent=self.request.user).order_by(
-            "title"
+            "title",
         )
 
 
 @login_required
 def dashboard(request):
-    """
-    Renders the main agent dashboard page.
-    """
+    """Renders the main agent dashboard page."""
     return render(request, "agent_hub/dashboard.html")
 
 
 class AgentPerformanceSnapshotViewSet(viewsets.ReadOnlyModelViewSet):
-    """
-    A viewset for viewing agent performance snapshots.
-    """
+    """A viewset for viewing agent performance snapshots."""
 
     serializer_class = AgentPerformanceSnapshotSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        """
-        This view should return a list of all performance snapshots
+        """This view should return a list of all performance snapshots
         for the currently authenticated user's agent profile.
         """
         return AgentPerformanceSnapshot.objects.filter(
-            agent__user=self.request.user
+            agent__user=self.request.user,
         ).order_by("-period_start")

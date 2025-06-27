@@ -13,7 +13,7 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument(
-            "--page-id", type=str, required=True, help="Facebook Page ID"
+            "--page-id", type=str, required=True, help="Facebook Page ID",
         )
 
         parser.add_argument(
@@ -26,7 +26,7 @@ class Command(BaseCommand):
         parser.add_argument("--app-id", type=str, required=True, help="Facebook App ID")
 
         parser.add_argument(
-            "--app-secret", type=str, required=True, help="Facebook App Secret"
+            "--app-secret", type=str, required=True, help="Facebook App Secret",
         )
 
         parser.add_argument(
@@ -64,16 +64,15 @@ class Command(BaseCommand):
 
             self.stdout.write(
                 self.style.SUCCESS(
-                    f"Successfully configured Facebook page: {page.page_name}"
-                )
+                    f"Successfully configured Facebook page: {page.page_name}",
+                ),
             )
 
         except Exception as e:
-            raise CommandError(f"Setup failed: {str(e)}")
+            raise CommandError(f"Setup failed: {e!s}")
 
     def _create_or_update_page(self, options):
         """Create or update Facebook page configuration."""
-
         page_id = options["page_id"]
         page_access_token = options["page_access_token"]
         app_id = options["app_id"]
@@ -110,7 +109,6 @@ class Command(BaseCommand):
 
     def _fetch_page_info(self, access_token):
         """Fetch page information from Facebook Graph API."""
-
         url = "https://graph.facebook.com/v18.0/me"
         params = {
             "access_token": access_token,
@@ -134,7 +132,6 @@ class Command(BaseCommand):
 
     def _test_connection(self, page):
         """Test connection to Facebook API."""
-
         self.stdout.write("Testing Facebook API connection...")
 
         try:
@@ -147,7 +144,7 @@ class Command(BaseCommand):
             else:
                 error_msg = response.get("error", {}).get("message", "Unknown error")
                 self.stdout.write(
-                    self.style.ERROR(f"✗ Connection test failed: {error_msg}")
+                    self.style.ERROR(f"✗ Connection test failed: {error_msg}"),
                 )
                 page.update_health_status(False, error_msg)
 
@@ -157,7 +154,6 @@ class Command(BaseCommand):
 
     def _configure_messenger_profile(self, page):
         """Configure basic Messenger profile settings."""
-
         self.stdout.write("Configuring Messenger profile...")
 
         try:
@@ -188,16 +184,16 @@ class Command(BaseCommand):
 
             if success:
                 self.stdout.write(
-                    self.style.SUCCESS("✓ Messenger profile configured successfully")
+                    self.style.SUCCESS("✓ Messenger profile configured successfully"),
                 )
             else:
                 self.stdout.write(
                     self.style.WARNING(
-                        "⚠ Some Messenger profile settings may not have been applied"
-                    )
+                        "⚠ Some Messenger profile settings may not have been applied",
+                    ),
                 )
 
         except Exception as e:
             self.stdout.write(
-                self.style.ERROR(f"✗ Messenger profile configuration failed: {e}")
+                self.style.ERROR(f"✗ Messenger profile configuration failed: {e}"),
             )

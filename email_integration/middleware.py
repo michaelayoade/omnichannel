@@ -1,5 +1,4 @@
-"""
-Security and logging middleware for the email integration app.
+"""Security and logging middleware for the email integration app.
 
 This module provides middleware components for:
 - Adding security headers to responses
@@ -19,8 +18,7 @@ logger = ContextLogger(__name__)
 
 
 class SecurityHeadersMiddleware:
-    """
-    Middleware to add security headers to all responses.
+    """Middleware to add security headers to all responses.
 
     This middleware implements security best practices by adding
     appropriate security headers to all HTTP responses.
@@ -54,8 +52,7 @@ class SecurityHeadersMiddleware:
 
 
 class RequestIDMiddleware:
-    """
-    Middleware to add a unique request ID to each request.
+    """Middleware to add a unique request ID to each request.
 
     This supports distributed tracing and structured logging by
     ensuring each request has a unique identifier that can be
@@ -114,8 +111,7 @@ class RequestIDMiddleware:
 
 
 class ContentValidationMiddleware:
-    """
-    Middleware to validate request content for security threats.
+    """Middleware to validate request content for security threats.
 
     This middleware scans request content for potentially malicious patterns
     like SQL injection or XSS attacks.
@@ -143,7 +139,7 @@ class ContentValidationMiddleware:
 
         # Check POST data
         if request.method == "POST":
-            for key, value in request.POST.items():
+            for _key, value in request.POST.items():
                 if self._is_suspicious(value):
                     logger.warning(
                         "Suspicious content detected in request",
@@ -181,11 +177,7 @@ class ContentValidationMiddleware:
         if not content or not isinstance(content, str):
             return False
 
-        for pattern in self.patterns:
-            if pattern.search(content):
-                return True
-
-        return False
+        return any(pattern.search(content) for pattern in self.patterns)
 
     def _get_client_ip(self, request):
         """Extract client IP address from request."""

@@ -21,7 +21,7 @@ class Customer(models.Model):
     city = models.CharField(max_length=100, blank=True)
     country = models.CharField(max_length=100, blank=True)
     status = models.CharField(
-        max_length=20, choices=CUSTOMER_STATUS_CHOICES, default="active"
+        max_length=20, choices=CUSTOMER_STATUS_CHOICES, default="active",
     )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -47,18 +47,18 @@ class CustomerService(models.Model):
     ]
 
     customer = models.ForeignKey(
-        Customer, on_delete=models.CASCADE, related_name="services"
+        Customer, on_delete=models.CASCADE, related_name="services",
     )
     splynx_service_id = models.CharField(
-        max_length=100, unique=True, null=True, blank=True
+        max_length=100, unique=True, null=True, blank=True,
     )
     service_name = models.CharField(max_length=200)
     service_type = models.CharField(max_length=100)
     status = models.CharField(
-        max_length=20, choices=SERVICE_STATUS_CHOICES, default="active"
+        max_length=20, choices=SERVICE_STATUS_CHOICES, default="active",
     )
     monthly_price = models.DecimalField(
-        max_digits=10, decimal_places=2, null=True, blank=True
+        max_digits=10, decimal_places=2, null=True, blank=True,
     )
     start_date = models.DateField(null=True, blank=True)
     end_date = models.DateField(null=True, blank=True)

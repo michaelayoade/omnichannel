@@ -1,4 +1,4 @@
-"""email_integration.tasks
+"""email_integration.tasks.
 
 This package contains all Celery tasks for the email integration app,
 organized by domain.

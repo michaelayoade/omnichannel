@@ -9,7 +9,7 @@ DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",
         "NAME": ":memory:",
-    }
+    },
 }
 
 # Use console email backend for testing
@@ -19,7 +19,7 @@ EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 CACHES = {
     "default": {
         "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
-    }
+    },
 }
 
 # Faster password hasher for tests

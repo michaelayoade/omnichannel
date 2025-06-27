@@ -14,7 +14,7 @@ class InstagramAccount(models.Model):
 
     # Basic Information
     instagram_business_account_id = models.CharField(
-        max_length=100, unique=True, help_text="Instagram Business Account ID"
+        max_length=100, unique=True, help_text="Instagram Business Account ID",
     )
     username = models.CharField(max_length=100, help_text="Instagram username")
     name = models.CharField(max_length=255, blank=True, help_text="Display name")
@@ -26,7 +26,7 @@ class InstagramAccount(models.Model):
     # Access Tokens and App Configuration
     access_token = models.TextField(help_text="Instagram Graph API access token")
     facebook_page_id = models.CharField(
-        max_length=100, help_text="Connected Facebook Page ID"
+        max_length=100, help_text="Connected Facebook Page ID",
     )
     app_id = models.CharField(max_length=100, help_text="Facebook App ID")
     app_secret = models.CharField(max_length=255, help_text="Facebook App Secret")
@@ -34,13 +34,13 @@ class InstagramAccount(models.Model):
     # Webhook Configuration
     webhook_url = models.URLField(blank=True, help_text="Webhook endpoint URL")
     verify_token = models.CharField(
-        max_length=255, help_text="Webhook verification token"
+        max_length=255, help_text="Webhook verification token",
     )
     webhook_subscribed = models.BooleanField(default=False)
 
     # Status and Health
     status = models.CharField(
-        max_length=20, choices=ACCOUNT_STATUS_CHOICES, default="pending"
+        max_length=20, choices=ACCOUNT_STATUS_CHOICES, default="pending",
     )
     is_healthy = models.BooleanField(default=False)
     last_health_check = models.DateTimeField(null=True, blank=True)
@@ -84,7 +84,7 @@ class InstagramAccount(models.Model):
         self.last_health_check = timezone.now()
         self.last_error_message = error_message or ""
         self.save(
-            update_fields=["is_healthy", "last_health_check", "last_error_message"]
+            update_fields=["is_healthy", "last_health_check", "last_error_message"],
         )
 
 
@@ -93,10 +93,10 @@ class InstagramUser(models.Model):
 
     # Instagram Information
     instagram_user_id = models.CharField(
-        max_length=100, unique=True, help_text="Instagram Scoped ID (IGSID)"
+        max_length=100, unique=True, help_text="Instagram Scoped ID (IGSID)",
     )
     account = models.ForeignKey(
-        InstagramAccount, on_delete=models.CASCADE, related_name="users"
+        InstagramAccount, on_delete=models.CASCADE, related_name="users",
     )
 
     # Profile Information
@@ -186,10 +186,10 @@ class InstagramMessage(models.Model):
 
     # Relationships
     account = models.ForeignKey(
-        InstagramAccount, on_delete=models.CASCADE, related_name="messages"
+        InstagramAccount, on_delete=models.CASCADE, related_name="messages",
     )
     instagram_user = models.ForeignKey(
-        InstagramUser, on_delete=models.CASCADE, related_name="messages"
+        InstagramUser, on_delete=models.CASCADE, related_name="messages",
     )
     conversation = models.ForeignKey(
         "conversations.Conversation",
@@ -201,7 +201,7 @@ class InstagramMessage(models.Model):
 
     # Message Details
     message_type = models.CharField(
-        max_length=20, choices=MESSAGE_TYPE_CHOICES, default="text"
+        max_length=20, choices=MESSAGE_TYPE_CHOICES, default="text",
     )
     direction = models.CharField(max_length=10, choices=DIRECTION_CHOICES)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="pending")
@@ -215,13 +215,13 @@ class InstagramMessage(models.Model):
 
     # Story-specific fields
     story_id = models.CharField(
-        max_length=100, blank=True, help_text="Story ID for story replies"
+        max_length=100, blank=True, help_text="Story ID for story replies",
     )
     story_url = models.URLField(blank=True)
 
     # Raw payload data
     payload = models.JSONField(
-        default=dict, blank=True, help_text="Raw message payload"
+        default=dict, blank=True, help_text="Raw message payload",
     )
 
     # Timestamps
@@ -310,7 +310,7 @@ class InstagramWebhookEvent(models.Model):
     event_id = models.CharField(max_length=100, unique=True)
     event_type = models.CharField(max_length=50, choices=EVENT_TYPE_CHOICES)
     account = models.ForeignKey(
-        InstagramAccount, on_delete=models.CASCADE, related_name="webhook_events"
+        InstagramAccount, on_delete=models.CASCADE, related_name="webhook_events",
     )
 
     # Event Data
@@ -373,7 +373,7 @@ class InstagramStory(models.Model):
     # Story Information
     story_id = models.CharField(max_length=100, unique=True)
     account = models.ForeignKey(
-        InstagramAccount, on_delete=models.CASCADE, related_name="stories"
+        InstagramAccount, on_delete=models.CASCADE, related_name="stories",
     )
 
     # Story Content
@@ -416,7 +416,7 @@ class InstagramRateLimit(models.Model):
 
     # Account and endpoint tracking
     account = models.ForeignKey(
-        InstagramAccount, on_delete=models.CASCADE, related_name="rate_limits"
+        InstagramAccount, on_delete=models.CASCADE, related_name="rate_limits",
     )
     endpoint = models.CharField(max_length=100, help_text="API endpoint")
 

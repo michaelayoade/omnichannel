@@ -1,5 +1,4 @@
 import logging
-from typing import Dict, List, Optional
 
 from django.db.models import Q
 from django.utils import timezone
@@ -39,33 +38,33 @@ class CustomerMatcher:
         return self._create_new_customer(instagram_user)
 
     def _match_by_existing_instagram_profile(
-        self, instagram_user: InstagramUser
-    ) -> Optional[Customer]:
+        self, instagram_user: InstagramUser,
+    ) -> Customer | None:
         """Check if Instagram user is already linked to a customer."""
         if instagram_user.customer:
             logger.info(
-                f"Instagram user {instagram_user.display_name} already linked to customer {instagram_user.customer.id}"
+                f"Instagram user {instagram_user.display_name} already linked to customer {instagram_user.customer.id}",
             )
             return instagram_user.customer
         return None
 
     def _match_by_phone_number(
-        self, instagram_user: InstagramUser
-    ) -> Optional[Customer]:
+        self, instagram_user: InstagramUser,
+    ) -> Customer | None:
         """Match by phone number if available in Instagram profile."""
         # Instagram API doesn't typically provide phone numbers
         # This is a placeholder for future enhancement or manual entry
         return None
 
-    def _match_by_email(self, instagram_user: InstagramUser) -> Optional[Customer]:
+    def _match_by_email(self, instagram_user: InstagramUser) -> Customer | None:
         """Match by email if available in Instagram profile."""
         # Instagram API doesn't typically provide email addresses
         # This is a placeholder for future enhancement or manual entry
         return None
 
     def _match_by_name_similarity(
-        self, instagram_user: InstagramUser
-    ) -> Optional[Customer]:
+        self, instagram_user: InstagramUser,
+    ) -> Customer | None:
         """Match by name similarity with existing customers."""
         if not instagram_user.name:
             return None
@@ -99,15 +98,15 @@ class CustomerMatcher:
 
             if best_match:
                 logger.info(
-                    f"Matched Instagram user {instagram_user.display_name} to customer {best_match.id} by name similarity (score: {best_score})"
+                    f"Matched Instagram user {instagram_user.display_name} to customer {best_match.id} by name similarity (score: {best_score})",
                 )
                 return best_match
 
         return None
 
     def _match_by_conversation_history(
-        self, instagram_user: InstagramUser
-    ) -> Optional[Customer]:
+        self, instagram_user: InstagramUser,
+    ) -> Customer | None:
         """Match by previous conversation history across channels."""
         # Look for conversations with similar user identifiers
         # This is more complex and might involve cross-channel matching
@@ -131,13 +130,13 @@ class CustomerMatcher:
         return len(intersection) / len(union) if union else 0.0
 
     def _link_instagram_to_customer(
-        self, instagram_user: InstagramUser, customer: Customer
+        self, instagram_user: InstagramUser, customer: Customer,
     ):
         """Link Instagram user to customer."""
         instagram_user.customer = customer
         instagram_user.save(update_fields=["customer"])
         logger.info(
-            f"Linked Instagram user {instagram_user.display_name} to customer {customer.id}"
+            f"Linked Instagram user {instagram_user.display_name} to customer {customer.id}",
         )
 
     def _create_new_customer(self, instagram_user: InstagramUser) -> Customer:
@@ -171,7 +170,7 @@ class CustomerMatcher:
         self._link_instagram_to_customer(instagram_user, customer)
 
         logger.info(
-            f"Created new customer {customer.id} for Instagram user {instagram_user.display_name}"
+            f"Created new customer {customer.id} for Instagram user {instagram_user.display_name}",
         )
         return customer
 
@@ -189,7 +188,7 @@ class ConversationManager:
 
         # Look for existing Instagram conversation
         existing_conversation = Conversation.objects.filter(
-            customer=customer, channel="instagram", status__in=["open", "pending"]
+            customer=customer, channel="instagram", status__in=["open", "pending"],
         ).first()
 
         if existing_conversation:
@@ -209,12 +208,12 @@ class ConversationManager:
         )
 
         logger.info(
-            f"Created conversation {conversation.id} for Instagram user {instagram_user.display_name}"
+            f"Created conversation {conversation.id} for Instagram user {instagram_user.display_name}",
         )
         return conversation
 
     def create_conversation_message(
-        self, instagram_message, conversation: Conversation
+        self, instagram_message, conversation: Conversation,
     ) -> Message:
         """Create conversation message from Instagram message."""
         # Determine message content
@@ -245,7 +244,7 @@ class ConversationManager:
         conversation.save()
 
         logger.info(
-            f"Created conversation message {message.id} for Instagram message {instagram_message.message_id}"
+            f"Created conversation message {message.id} for Instagram message {instagram_message.message_id}",
         )
         return message
 
@@ -284,14 +283,14 @@ class InstagramUserService:
         return instagram_user
 
     def get_user_conversation_history(
-        self, instagram_user: InstagramUser
-    ) -> List[Dict]:
+        self, instagram_user: InstagramUser,
+    ) -> list[dict]:
         """Get conversation history for Instagram user across all channels."""
         if not instagram_user.customer:
             return []
 
         conversations = Conversation.objects.filter(
-            customer=instagram_user.customer
+            customer=instagram_user.customer,
         ).order_by("-last_message_at")[:10]
 
         history = []
@@ -305,12 +304,12 @@ class InstagramUserService:
                     "message_count": conversation.message_count,
                     "last_message_at": conversation.last_message_at,
                     "created_at": conversation.created_at,
-                }
+                },
             )
 
         return history
 
-    def identify_user_intent(self, instagram_message) -> Dict:
+    def identify_user_intent(self, instagram_message) -> dict:
         """Analyze message to identify user intent."""
         # Simple intent analysis - can be enhanced with NLP
         content = instagram_message.text.lower() if instagram_message.text else ""

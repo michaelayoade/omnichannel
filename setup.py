@@ -12,8 +12,9 @@ def setup_virtual_environment():
     """Create and activate a virtual environment."""
     venv_dir = BASE_DIR / "venv"
 
-    print("Creating virtual environment...")
-    subprocess.run([sys.executable, "-m", "venv", str(venv_dir)], check=True)  # nosec B603
+    subprocess.run(
+        [sys.executable, "-m", "venv", str(venv_dir)], check=True,
+    )  # nosec B603
 
     # Determine the pip path based on OS
     if sys.platform == "win32":
@@ -22,7 +23,9 @@ def setup_virtual_environment():
         pip_path = venv_dir / "bin" / "pip"
 
     # Upgrade pip
-    subprocess.run([str(pip_path), "install", "--upgrade", "pip"], check=True)  # nosec B603
+    subprocess.run(
+        [str(pip_path), "install", "--upgrade", "pip"], check=True,
+    )  # nosec B603
 
     return pip_path
 
@@ -31,8 +34,9 @@ def install_dependencies(pip_path):
     """Install Python dependencies from requirements.txt."""
     requirements_path = BASE_DIR / "requirements.txt"
 
-    print("Installing Python dependencies...")
-    subprocess.run([str(pip_path), "install", "-r", str(requirements_path)], check=True)  # nosec B603
+    subprocess.run(
+        [str(pip_path), "install", "-r", str(requirements_path)], check=True,
+    )  # nosec B603
 
 
 def setup_frontend():
@@ -40,10 +44,8 @@ def setup_frontend():
     frontend_dir = BASE_DIR / "frontend" / "agent-dashboard"
 
     if not frontend_dir.exists():
-        print("Frontend directory not found. Skipping frontend setup.")
         return
 
-    print("Setting up frontend application...")
     # Use npm ci for clean installs
     subprocess.run(["npm", "ci"], cwd=str(frontend_dir), check=True)  # nosec B603, B607
 
@@ -53,17 +55,14 @@ def setup_database():
     manage_py = BASE_DIR / "manage.py"
 
     if not manage_py.exists():
-        print("manage.py not found. Skipping database setup.")
         return
 
-    print("Running database migrations...")
     subprocess.run(
-        [sys.executable, str(manage_py), "migrate"], check=True
+        [sys.executable, str(manage_py), "migrate"], check=True,
     )  # nosec B603
 
-    print("Creating initial test data...")
     subprocess.run(  # nosec B603
-        [sys.executable, str(manage_py), "loaddata", "initial_data"], check=True
+        [sys.executable, str(manage_py), "loaddata", "initial_data"], check=True,
     )
 
 
@@ -73,16 +72,12 @@ def create_env_file():
     env_file = BASE_DIR / ".env"
 
     if not env_file.exists() and env_example.exists():
-        print("Creating .env file from .env.example...")
         with env_example.open("r") as example, env_file.open("w") as env:
             env.write(example.read())
-        print("Created .env file. Please update it with your configuration.")
 
 
 def main():
     """Run the setup process."""
-    print("Starting Omnichannel MVP setup...")
-
     try:
         # Create .env file first so it's available for later steps
         create_env_file()
@@ -97,24 +92,16 @@ def main():
         # Setup database
         setup_database()
 
-        print("\n✅ Setup completed successfully!")
-        print("\nTo activate the virtual environment:")
         if sys.platform == "win32":
-            print("    .\\venv\\Scripts\\activate")
+            pass
         else:
-            print("    source venv/bin/activate")
+            pass
 
-        print("\nTo start the development server:")
-        print("    python manage.py runserver")
 
-        print("\nTo start the frontend development server:")
-        print("    cd frontend/agent-dashboard && npm run dev")
 
-    except subprocess.CalledProcessError as e:
-        print(f"\n❌ Setup failed: {e}")
+    except subprocess.CalledProcessError:
         sys.exit(1)
-    except Exception as e:
-        print(f"\n❌ Unexpected error: {e}")
+    except Exception:
         sys.exit(1)
 
 

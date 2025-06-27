@@ -8,7 +8,7 @@ __all__ = ["EmailPollLog"]
 
 class EmailPollLog(models.Model):
     account = models.ForeignKey(
-        EmailAccount, on_delete=models.CASCADE, related_name="poll_logs"
+        EmailAccount, on_delete=models.CASCADE, related_name="poll_logs",
     )
     status = models.CharField(max_length=20, choices=PollStatus.choices)
     messages_found = models.IntegerField(default=0)

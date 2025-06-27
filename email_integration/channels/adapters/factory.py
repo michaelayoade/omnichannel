@@ -1,5 +1,4 @@
-"""
-Factory module for creating appropriate email adapter instances.
+"""Factory module for creating appropriate email adapter instances.
 
 This module implements the factory pattern to create and configure the
 appropriate email protocol adapter based on account settings and account type.
@@ -16,18 +15,21 @@ logger = ContextLogger(__name__)
 
 
 def get_adapter(account, adapter_type=None):
-    """
-    Factory function to create and return the appropriate adapter for an account.
+    """Factory function to create and return the appropriate adapter for an account.
 
     Args:
+    ----
         account: EmailAccount instance
         adapter_type: Optional adapter type (inbound or outbound)
 
     Returns:
+    -------
         Configured adapter instance
 
     Raises:
+    ------
         ConfigurationError: If adapter cannot be determined or created
+
     """
     if not account:
         raise ConfigurationError("Account is missing or invalid")
@@ -61,22 +63,25 @@ def get_adapter(account, adapter_type=None):
                 "error": str(e),
             },
         )
-        raise ConfigurationError(f"Failed to create adapter: {str(e)}")
+        raise ConfigurationError(f"Failed to create adapter: {e!s}")
 
 
 def _determine_adapter_path(account, adapter_type=None):
-    """
-    Determine which adapter class to use based on account settings.
+    """Determine which adapter class to use based on account settings.
 
     Args:
+    ----
         account: EmailAccount instance
         adapter_type: Optional explicit adapter type (inbound or outbound)
 
     Returns:
+    -------
         String with import path to adapter class
 
     Raises:
+    ------
         ConfigurationError: If adapter type cannot be determined
+
     """
     base_path = "email_integration.channels.adapters"
 

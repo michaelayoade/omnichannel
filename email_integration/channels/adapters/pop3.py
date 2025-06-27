@@ -1,5 +1,4 @@
-"""
-POP3 email protocol adapter implementation.
+"""POP3 email protocol adapter implementation.
 
 This module provides a POP3 adapter that can connect to POP3 email servers
 and fetch messages.
@@ -7,10 +6,9 @@ and fetch messages.
 
 import email
 import poplib
-import socket
 import ssl
 import uuid
-from typing import Any, Dict, List
+from typing import Any
 
 from omnichannel_core.utils.logging import ContextLogger
 
@@ -28,19 +26,19 @@ logger = ContextLogger(__name__)
 
 
 class POP3Adapter(BaseInboundAdapter):
-    """
-    POP3 adapter for fetching email messages from a POP3 server.
+    """POP3 adapter for fetching email messages from a POP3 server.
 
     This adapter handles the connection to the POP3 server,
     authentication, and message fetching.
     """
 
     def __init__(self, account):
-        """
-        Initialize the POP3 adapter with an email account.
+        """Initialize the POP3 adapter with an email account.
 
         Args:
+        ----
             account: The EmailAccount model instance
+
         """
         self.account = account
         self.server = None
@@ -48,7 +46,7 @@ class POP3Adapter(BaseInboundAdapter):
         self.connection_timeout = get_config("DEFAULT_TIMEOUT", 30)
         self.max_message_age_days = get_config("MAX_MESSAGE_AGE_DAYS", 30)
         self.max_messages_per_poll = min(
-            account.max_emails_per_poll, get_config("MAX_MESSAGES_PER_POLL", 50)
+            account.max_emails_per_poll, get_config("MAX_MESSAGES_PER_POLL", 50),
         )
         self.request_id = str(uuid.uuid4())
 
@@ -61,11 +59,12 @@ class POP3Adapter(BaseInboundAdapter):
         )
 
     def connect(self) -> None:
-        """
-        Establish a connection to the POP3 server.
+        """Establish a connection to the POP3 server.
 
-        Raises:
+        Raises
+        ------
             ConnectionError: If unable to connect to the server
+
         """
         try:
             logger.info(
@@ -97,17 +96,18 @@ class POP3Adapter(BaseInboundAdapter):
             welcome = self.server.getwelcome().decode("utf-8", errors="replace")
             logger.debug("Connected to POP3 server", extra={"welcome": welcome})
 
-        except (socket.error, ssl.SSLError, poplib.error_proto) as e:
-            error_msg = f"Failed to connect to POP3 server: {str(e)}"
+        except (OSError, ssl.SSLError, poplib.error_proto) as e:
+            error_msg = f"Failed to connect to POP3 server: {e!s}"
             logger.error(error_msg)
             raise ConnectionError(error_msg)
 
     def authenticate(self) -> None:
-        """
-        Authenticate to the POP3 server using account credentials.
+        """Authenticate to the POP3 server using account credentials.
 
-        Raises:
+        Raises
+        ------
             AuthenticationError: If authentication fails
+
         """
         if not self.server:
             self.connect()
@@ -127,25 +127,27 @@ class POP3Adapter(BaseInboundAdapter):
             logger.debug("POP3 authentication successful")
 
         except poplib.error_proto as e:
-            error_msg = f"POP3 authentication failed: {str(e)}"
+            error_msg = f"POP3 authentication failed: {e!s}"
             logger.error(error_msg)
             raise AuthenticationError(error_msg)
 
         except Exception as e:
             # Catch any unexpected errors
-            error_msg = f"Unexpected error during POP3 authentication: {str(e)}"
+            error_msg = f"Unexpected error during POP3 authentication: {e!s}"
             logger.exception(error_msg)
             raise AuthenticationError(error_msg)
 
-    def get_new_messages(self) -> List[Dict[str, Any]]:
-        """
-        Fetch new messages from the POP3 server.
+    def get_new_messages(self) -> list[dict[str, Any]]:
+        """Fetch new messages from the POP3 server.
 
-        Returns:
+        Returns
+        -------
             List of messages as dictionaries with message data
 
-        Raises:
+        Raises
+        ------
             PollingError: If there is an error fetching messages
+
         """
         if not self.server:
             self.connect()
@@ -175,7 +177,7 @@ class POP3Adapter(BaseInboundAdapter):
                 msg_id = msg_data[0]
 
                 logger.debug(
-                    f"Fetching message {i+1}/{len(messages)}", extra={"msg_id": msg_id}
+                    f"Fetching message {i+1}/{len(messages)}", extra={"msg_id": msg_id},
                 )
 
                 try:
@@ -210,14 +212,14 @@ class POP3Adapter(BaseInboundAdapter):
 
                 except (poplib.error_proto, email.errors.MessageError) as e:
                     # Log error but continue with other messages
-                    logger.warning(f"Error processing message {msg_id}: {str(e)}")
+                    logger.warning(f"Error processing message {msg_id}: {e!s}")
                     continue
 
             logger.info(f"Fetched {len(parsed_messages)} new messages")
             return parsed_messages
 
-        except (poplib.error_proto, socket.error) as e:
-            error_msg = f"Error fetching messages from POP3 server: {str(e)}"
+        except (OSError, poplib.error_proto) as e:
+            error_msg = f"Error fetching messages from POP3 server: {e!s}"
             logger.error(error_msg)
             raise PollingError(error_msg)
 
@@ -225,14 +227,12 @@ class POP3Adapter(BaseInboundAdapter):
             self.disconnect()
 
     def disconnect(self) -> None:
-        """
-        Close the connection to the POP3 server.
-        """
+        """Close the connection to the POP3 server."""
         if self.server:
             try:
                 self.server.quit()
                 logger.debug("Disconnected from POP3 server")
-            except (poplib.error_proto, socket.error) as e:
-                logger.warning(f"Error disconnecting from POP3 server: {str(e)}")
+            except (OSError, poplib.error_proto) as e:
+                logger.warning(f"Error disconnecting from POP3 server: {e!s}")
             finally:
                 self.server = None

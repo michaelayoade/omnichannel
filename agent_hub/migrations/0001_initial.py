@@ -114,7 +114,9 @@ class Migration(migrations.Migration):
                 (
                     "channel_message_id",
                     models.CharField(
-                        help_text="The unique ID of the message from the source channel.",
+                        help_text=(
+                            "The unique ID of the message from the source channel."
+                        ),
                         max_length=255,
                         unique=True,
                     ),

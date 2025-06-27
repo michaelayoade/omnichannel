@@ -1,5 +1,4 @@
-"""
-Custom model fields for the email integration app.
+"""Custom model fields for the email integration app.
 
 This module provides custom Django model fields with encryption
 and other specialized behaviors.
@@ -13,8 +12,7 @@ from ..utils.crypto import decrypt_value, encrypt_value
 
 
 class EncryptedCharField(models.CharField):
-    """
-    CharField that transparently encrypts and decrypts its value
+    """CharField that transparently encrypts and decrypts its value
     using the application's encryption utilities.
 
     The field behaves exactly like a normal CharField except that its value
@@ -88,15 +86,14 @@ class EncryptedCharField(models.CharField):
                     "EncryptedCharField requires ENCRYPTION_KEY to be set",
                     obj=self,
                     id="email_integration.E001",
-                )
+                ),
             )
 
         return errors
 
 
 class EncryptedTextField(models.TextField):
-    """
-    TextField that transparently encrypts and decrypts its value.
+    """TextField that transparently encrypts and decrypts its value.
 
     Similar to EncryptedCharField but for larger text values.
     """
@@ -152,7 +149,7 @@ class EncryptedTextField(models.TextField):
                     "EncryptedTextField requires ENCRYPTION_KEY to be set",
                     obj=self,
                     id="email_integration.E001",
-                )
+                ),
             )
 
         return errors

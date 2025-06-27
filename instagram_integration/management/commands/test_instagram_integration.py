@@ -9,10 +9,10 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument(
-            "--account-id", type=int, help="Instagram account ID to test"
+            "--account-id", type=int, help="Instagram account ID to test",
         )
         parser.add_argument(
-            "--test-user-id", type=str, help="Instagram user ID to send test message to"
+            "--test-user-id", type=str, help="Instagram user ID to send test message to",
         )
         parser.add_argument(
             "--test-message",
@@ -21,10 +21,10 @@ class Command(BaseCommand):
             help="Test message to send",
         )
         parser.add_argument(
-            "--health-check-only", action="store_true", help="Only perform health check"
+            "--health-check-only", action="store_true", help="Only perform health check",
         )
         parser.add_argument(
-            "--list-accounts", action="store_true", help="List all Instagram accounts"
+            "--list-accounts", action="store_true", help="List all Instagram accounts",
         )
 
     def handle(self, *args, **options):
@@ -38,7 +38,7 @@ class Command(BaseCommand):
             account = InstagramAccount.objects.first()
             if not account:
                 raise CommandError(
-                    "No Instagram accounts found. Run setup_instagram_account first."
+                    "No Instagram accounts found. Run setup_instagram_account first.",
                 )
         else:
             try:
@@ -47,7 +47,7 @@ class Command(BaseCommand):
                 raise CommandError(f"Instagram account {account_id} not found")
 
         self.stdout.write(
-            f"Testing Instagram account: @{account.username} (ID: {account.id})"
+            f"Testing Instagram account: @{account.username} (ID: {account.id})",
         )
 
         # Initialize message service
@@ -59,16 +59,16 @@ class Command(BaseCommand):
             is_healthy, status_message = message_service.api_client.health_check()
             if is_healthy:
                 self.stdout.write(
-                    self.style.SUCCESS(f"✓ Health check passed: {status_message}")
+                    self.style.SUCCESS(f"✓ Health check passed: {status_message}"),
                 )
             else:
                 self.stdout.write(
-                    self.style.ERROR(f"✗ Health check failed: {status_message}")
+                    self.style.ERROR(f"✗ Health check failed: {status_message}"),
                 )
                 if options["health_check_only"]:
                     return
         except Exception as e:
-            self.stdout.write(self.style.ERROR(f"✗ Health check error: {str(e)}"))
+            self.stdout.write(self.style.ERROR(f"✗ Health check error: {e!s}"))
             if options["health_check_only"]:
                 return
 
@@ -81,10 +81,10 @@ class Command(BaseCommand):
             account_info = message_service.api_client.get_account_info()
             self.stdout.write(self.style.SUCCESS("✓ API connectivity successful"))
             self.stdout.write(
-                f'  Account: @{account_info.get("username")} ({account_info.get("followers_count")} followers)'
+                f'  Account: @{account_info.get("username")} ({account_info.get("followers_count")} followers)',
             )
         except Exception as e:
-            self.stdout.write(self.style.ERROR(f"✗ API connectivity failed: {str(e)}"))
+            self.stdout.write(self.style.ERROR(f"✗ API connectivity failed: {e!s}"))
             return
 
         # Test conversations retrieval
@@ -93,11 +93,11 @@ class Command(BaseCommand):
             conversations = message_service.api_client.get_conversations(limit=5)
             conversation_count = len(conversations.get("data", []))
             self.stdout.write(
-                self.style.SUCCESS(f"✓ Retrieved {conversation_count} conversations")
+                self.style.SUCCESS(f"✓ Retrieved {conversation_count} conversations"),
             )
         except Exception as e:
             self.stdout.write(
-                self.style.WARNING(f"⚠ Conversation retrieval failed: {str(e)}")
+                self.style.WARNING(f"⚠ Conversation retrieval failed: {e!s}"),
             )
 
         # Test message sending if user ID provided
@@ -112,32 +112,32 @@ class Command(BaseCommand):
                 # Send test message
                 test_message = options["test_message"]
                 message = message_service.send_text_message(
-                    instagram_user, test_message
+                    instagram_user, test_message,
                 )
 
                 self.stdout.write(
                     self.style.SUCCESS(
-                        f"✓ Test message sent successfully (ID: {message.message_id})"
-                    )
+                        f"✓ Test message sent successfully (ID: {message.message_id})",
+                    ),
                 )
                 self.stdout.write(f"  Status: {message.status}")
 
             except InstagramAPIError as e:
                 self.stdout.write(
-                    self.style.ERROR(f"✗ Message sending failed: {str(e)}")
+                    self.style.ERROR(f"✗ Message sending failed: {e!s}"),
                 )
             except Exception as e:
-                self.stdout.write(self.style.ERROR(f"✗ Unexpected error: {str(e)}"))
+                self.stdout.write(self.style.ERROR(f"✗ Unexpected error: {e!s}"))
         else:
             self.stdout.write(
-                "\n4. Skipping message sending test (no --test-user-id provided)"
+                "\n4. Skipping message sending test (no --test-user-id provided)",
             )
 
         # Display account statistics
         self.stdout.write("\n5. Account Statistics:")
         self.stdout.write(f"  Total messages sent: {account.total_messages_sent}")
         self.stdout.write(
-            f"  Total messages received: {account.total_messages_received}"
+            f"  Total messages received: {account.total_messages_received}",
         )
         self.stdout.write(f"  Total story replies: {account.total_story_replies}")
         self.stdout.write(f"  Webhook subscribed: {account.webhook_subscribed}")
@@ -151,7 +151,7 @@ class Command(BaseCommand):
                 direction_symbol = "→" if msg.direction == "outbound" else "←"
                 self.stdout.write(
                     f'  {direction_symbol} {msg.timestamp.strftime("%Y-%m-%d %H:%M")} '
-                    f"{msg.instagram_user.display_name}: {msg.text[:50]}..."
+                    f"{msg.instagram_user.display_name}: {msg.text[:50]}...",
                 )
         else:
             self.stdout.write("  No recent messages found")
@@ -180,7 +180,7 @@ class Command(BaseCommand):
             self.stdout.write(f"Username: @{account.username}")
             self.stdout.write(f"Name: {account.name}")
             self.stdout.write(
-                f"Instagram Business Account ID: {account.instagram_business_account_id}"
+                f"Instagram Business Account ID: {account.instagram_business_account_id}",
             )
             self.stdout.write(status_color(f"Status: {account.status}"))
             self.stdout.write(status_color(f"Health: {account.health_status}"))
@@ -188,6 +188,6 @@ class Command(BaseCommand):
             self.stdout.write(f"Messages Sent: {account.total_messages_sent}")
             self.stdout.write(f"Messages Received: {account.total_messages_received}")
             self.stdout.write(
-                f'Created: {account.created_at.strftime("%Y-%m-%d %H:%M")}'
+                f'Created: {account.created_at.strftime("%Y-%m-%d %H:%M")}',
             )
             self.stdout.write("-" * 80)

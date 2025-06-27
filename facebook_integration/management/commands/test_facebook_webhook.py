@@ -13,11 +13,11 @@ class Command(BaseCommand):
         parser.add_argument("--webhook-url", type=str, help="Webhook URL to test")
 
         parser.add_argument(
-            "--verify-webhook", action="store_true", help="Test webhook verification"
+            "--verify-webhook", action="store_true", help="Test webhook verification",
         )
 
         parser.add_argument(
-            "--subscribe-webhook", action="store_true", help="Subscribe page to webhook"
+            "--subscribe-webhook", action="store_true", help="Subscribe page to webhook",
         )
 
         parser.add_argument(
@@ -27,7 +27,7 @@ class Command(BaseCommand):
         )
 
         parser.add_argument(
-            "--recipient-psid", type=str, help="Recipient PSID for test message"
+            "--recipient-psid", type=str, help="Recipient PSID for test message",
         )
 
         parser.add_argument(
@@ -66,19 +66,18 @@ class Command(BaseCommand):
             # Send test message
             if options["test_message"] and options["recipient_psid"]:
                 self._send_test_message(
-                    page, options["recipient_psid"], options["test_message"]
+                    page, options["recipient_psid"], options["test_message"],
                 )
 
         except Exception as e:
-            raise CommandError(f"Test failed: {str(e)}")
+            raise CommandError(f"Test failed: {e!s}")
 
     def _test_webhook_verification(self, page, webhook_url=None):
         """Test webhook verification process."""
-
         webhook_url = webhook_url or page.webhook_url
         if not webhook_url:
             self.stdout.write(
-                self.style.WARNING("No webhook URL configured for this page")
+                self.style.WARNING("No webhook URL configured for this page"),
             )
             return
 
@@ -97,19 +96,19 @@ class Command(BaseCommand):
             if response.status_code == 200:
                 if response.text == "test_challenge_12345":
                     self.stdout.write(
-                        self.style.SUCCESS("✓ Webhook verification successful")
+                        self.style.SUCCESS("✓ Webhook verification successful"),
                     )
                 else:
                     self.stdout.write(
                         self.style.ERROR(
-                            f"✗ Webhook returned wrong challenge: {response.text}"
-                        )
+                            f"✗ Webhook returned wrong challenge: {response.text}",
+                        ),
                     )
             else:
                 self.stdout.write(
                     self.style.ERROR(
-                        f"✗ Webhook verification failed: {response.status_code}"
-                    )
+                        f"✗ Webhook verification failed: {response.status_code}",
+                    ),
                 )
 
         except requests.RequestException as e:
@@ -117,7 +116,6 @@ class Command(BaseCommand):
 
     def _subscribe_webhook(self, page):
         """Subscribe page to webhook."""
-
         self.stdout.write("Subscribing page to webhook...")
 
         url = f"https://graph.facebook.com/v18.0/{page.page_id}/subscribed_apps"
@@ -143,7 +141,7 @@ class Command(BaseCommand):
 
             if result.get("success"):
                 self.stdout.write(
-                    self.style.SUCCESS("✓ Webhook subscription successful")
+                    self.style.SUCCESS("✓ Webhook subscription successful"),
                 )
                 page.webhook_subscribed = True
                 page.save(update_fields=["webhook_subscribed"])
@@ -155,7 +153,6 @@ class Command(BaseCommand):
 
     def _list_webhook_subscriptions(self, page):
         """List current webhook subscriptions."""
-
         self.stdout.write("Listing webhook subscriptions...")
 
         url = f"https://graph.facebook.com/v18.0/{page.page_id}/subscribed_apps"
@@ -184,7 +181,6 @@ class Command(BaseCommand):
 
     def _send_test_message(self, page, recipient_psid, message_text):
         """Send a test message."""
-
         self.stdout.write(f"Sending test message to {recipient_psid}...")
 
         from facebook_integration.services.facebook_api import FacebookMessengerService
@@ -195,11 +191,11 @@ class Command(BaseCommand):
 
             if message.status == "sent":
                 self.stdout.write(
-                    self.style.SUCCESS(f"✓ Test message sent: {message.message_id}")
+                    self.style.SUCCESS(f"✓ Test message sent: {message.message_id}"),
                 )
             else:
                 self.stdout.write(
-                    self.style.ERROR(f"✗ Test message failed: {message.error_message}")
+                    self.style.ERROR(f"✗ Test message failed: {message.error_message}"),
                 )
 
         except Exception as e:

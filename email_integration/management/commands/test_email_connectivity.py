@@ -11,11 +11,11 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument(
-            "--account-id", type=int, help="Specific email account ID to test"
+            "--account-id", type=int, help="Specific email account ID to test",
         )
 
         parser.add_argument(
-            "--email-address", type=str, help="Email address of account to test"
+            "--email-address", type=str, help="Email address of account to test",
         )
 
         parser.add_argument(
@@ -33,7 +33,7 @@ class Command(BaseCommand):
         )
 
         parser.add_argument(
-            "--to-email", type=str, help="Email address to send test email to"
+            "--to-email", type=str, help="Email address to send test email to",
         )
 
     def handle(self, *args, **options):
@@ -43,15 +43,15 @@ class Command(BaseCommand):
                 account = EmailAccount.objects.get(id=options["account_id"])
             elif options["email_address"]:
                 account = EmailAccount.objects.get(
-                    email_address=options["email_address"]
+                    email_address=options["email_address"],
                 )
             else:
                 raise CommandError("Either --account-id or --email-address is required")
 
             self.stdout.write(
                 self.style.SUCCESS(
-                    f"Testing account: {account.name} ({account.email_address})"
-                )
+                    f"Testing account: {account.name} ({account.email_address})",
+                ),
             )
 
             # Test based on type
@@ -73,7 +73,7 @@ class Command(BaseCommand):
         except EmailAccount.DoesNotExist:
             raise CommandError("Email account not found")
         except Exception as e:
-            raise CommandError(f"Test failed: {str(e)}")
+            raise CommandError(f"Test failed: {e!s}")
 
     def _test_smtp(self, account, options):
         """Test SMTP connectivity and optionally send test email."""
@@ -91,8 +91,8 @@ class Command(BaseCommand):
                     if not options["to_email"]:
                         self.stdout.write(
                             self.style.WARNING(
-                                "--to-email required for sending test email"
-                            )
+                                "--to-email required for sending test email",
+                            ),
                         )
                     else:
                         self._send_test_email(smtp_service, options["to_email"])
@@ -184,8 +184,8 @@ If you received this email, the SMTP configuration is working correctly.
 
             self.stdout.write(
                 self.style.SUCCESS(
-                    f"✓ Test email sent successfully: {message.message_id}"
-                )
+                    f"✓ Test email sent successfully: {message.message_id}",
+                ),
             )
 
         except Exception as e:

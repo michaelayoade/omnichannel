@@ -1,5 +1,4 @@
-"""
-Integration tests for SMTP email adapter.
+"""Integration tests for SMTP email adapter.
 
 These tests verify the behavior of the SMTP adapter using a mock SMTP server
 to simulate the actual email server responses.
@@ -9,6 +8,7 @@ import os
 import tempfile
 from unittest import mock
 
+import pytest
 from django.core.files.base import ContentFile
 from django.test import TestCase
 
@@ -74,7 +74,7 @@ class MockSMTPServer:
 
         # Store the sent message for later verification
         self.sent_messages.append(
-            {"message": message, "from_addr": from_addr, "to_addrs": to_addrs}
+            {"message": message, "from_addr": from_addr, "to_addrs": to_addrs},
         )
 
         return {}  # Empty dict means no errors
@@ -88,7 +88,7 @@ class MockSMTPServer:
 
         # Store the sent message for later verification
         self.sent_messages.append(
-            {"from_addr": from_addr, "to_addrs": to_addrs, "msg": msg}
+            {"from_addr": from_addr, "to_addrs": to_addrs, "msg": msg},
         )
 
         return {}  # Empty dict means no errors
@@ -114,7 +114,7 @@ class SMTPAdapterTest(TestCase):
         """Set up testing environment."""
         # Create a test account with SMTP settings
         self.account = EmailAccountFactory(
-            email_address="sender@example.com", name="Test Sender"
+            email_address="sender@example.com", name="Test Sender",
         )
 
         # Add SMTP specific settings
@@ -149,7 +149,7 @@ class SMTPAdapterTest(TestCase):
         self.smtp_ssl_patcher.stop()
 
         # Clean up temporary files
-        for root, dirs, files in os.walk(self.temp_dir):
+        for root, _dirs, files in os.walk(self.temp_dir):
             for file in files:
                 os.unlink(os.path.join(root, file))
         os.rmdir(self.temp_dir)
@@ -160,13 +160,13 @@ class SMTPAdapterTest(TestCase):
         self.adapter.connect()
 
         # Verify connection was established
-        self.assertTrue(self.mock_server.connected)
-        self.assertTrue(self.mock_server.authenticated)
+        assert self.mock_server.connected
+        assert self.mock_server.authenticated
 
         # Verify server was called with correct parameters
-        self.assertEqual(self.mock_server.calls[0]["method"], "__call__")
-        self.assertEqual(self.mock_server.calls[0]["args"][0], "smtp.example.com")
-        self.assertEqual(self.mock_server.calls[0]["args"][1], 587)
+        assert self.mock_server.calls[0]["method"] == "__call__"
+        assert self.mock_server.calls[0]["args"][0] == "smtp.example.com"
+        assert self.mock_server.calls[0]["args"][1] == 587
 
     def test_connect_auth_error(self):
         """Test authentication error handling."""
@@ -174,13 +174,11 @@ class SMTPAdapterTest(TestCase):
         self.mock_server.auth_fail = True
 
         # Connect should raise AuthenticationError
-        with self.assertRaises(AuthenticationError):
+        with pytest.raises(AuthenticationError):
             self.adapter.connect()
 
         # Verify proper calls were made despite failure
-        self.assertTrue(
-            any(call["method"] == "login" for call in self.mock_server.calls)
-        )
+        assert any(call["method"] == "login" for call in self.mock_server.calls)
 
     def test_send_text_email(self):
         """Test sending a simple text email."""
@@ -200,23 +198,21 @@ class SMTPAdapterTest(TestCase):
         result = self.adapter.send_email(**email_data)
 
         # Verify success
-        self.assertTrue(result["success"])
+        assert result["success"]
 
         # Verify a message was sent
-        self.assertEqual(len(self.mock_server.sent_messages), 1)
+        assert len(self.mock_server.sent_messages) == 1
 
         # Check if quit was called to commit the send
-        self.assertTrue(
-            any(call["method"] == "quit" for call in self.mock_server.calls)
-        )
+        assert any(call["method"] == "quit" for call in self.mock_server.calls)
 
         # For send_message, we need to verify the message content
         sent_message = self.mock_server.sent_messages[0].get("message")
         if sent_message:
-            self.assertEqual(sent_message["Subject"], "Test Email")
-            self.assertEqual(sent_message["From"], "Test Sender <sender@example.com>")
-            self.assertEqual(sent_message["To"], "recipient@example.com")
-            self.assertEqual(sent_message["Cc"], "cc@example.com")
+            assert sent_message["Subject"] == "Test Email"
+            assert sent_message["From"] == "Test Sender <sender@example.com>"
+            assert sent_message["To"] == "recipient@example.com"
+            assert sent_message["Cc"] == "cc@example.com"
 
     def test_send_html_email(self):
         """Test sending an HTML email."""
@@ -235,13 +231,13 @@ class SMTPAdapterTest(TestCase):
         result = self.adapter.send_email(**email_data)
 
         # Verify success
-        self.assertTrue(result["success"])
+        assert result["success"]
 
         # Check content type in sent message
         sent_message = self.mock_server.sent_messages[0].get("message")
         if sent_message:
             # Should be multipart for HTML emails
-            self.assertTrue(sent_message.is_multipart())
+            assert sent_message.is_multipart()
 
             # Find the HTML part
             html_part = None
@@ -251,8 +247,8 @@ class SMTPAdapterTest(TestCase):
                     break
 
             # Verify HTML part exists and has correct content
-            self.assertIsNotNone(html_part)
-            self.assertIn("text/html", html_part.get("Content-Type", ""))
+            assert html_part is not None
+            assert "text/html" in html_part.get("Content-Type", "")
 
     def test_send_with_attachments(self):
         """Test sending an email with attachments."""
@@ -264,14 +260,14 @@ class SMTPAdapterTest(TestCase):
 
         # PDF attachment
         pdf_attachment = Attachment(
-            name="test.pdf", content_type="application/pdf", size=100
+            name="test.pdf", content_type="application/pdf", size=100,
         )
         pdf_attachment.file.save("test.pdf", ContentFile(b"Test PDF content"))
         attachments.append(pdf_attachment)
 
         # Text attachment
         text_attachment = Attachment(
-            name="test.txt", content_type="text/plain", size=50
+            name="test.txt", content_type="text/plain", size=50,
         )
         text_attachment.file.save("test.txt", ContentFile(b"Test text content"))
         attachments.append(text_attachment)
@@ -288,13 +284,13 @@ class SMTPAdapterTest(TestCase):
         result = self.adapter.send_email(**email_data)
 
         # Verify success
-        self.assertTrue(result["success"])
+        assert result["success"]
 
         # Check multipart message in sent message
         sent_message = self.mock_server.sent_messages[0].get("message")
         if sent_message:
             # Should be multipart for attachments
-            self.assertTrue(sent_message.is_multipart())
+            assert sent_message.is_multipart()
 
             # Count attachments
             attachment_parts = []
@@ -304,12 +300,12 @@ class SMTPAdapterTest(TestCase):
                     attachment_parts.append(part)
 
             # Verify attachment count
-            self.assertEqual(len(attachment_parts), 2)
+            assert len(attachment_parts) == 2
 
             # Verify attachment filenames
             filenames = [part.get_filename() for part in attachment_parts]
-            self.assertIn("test.pdf", filenames)
-            self.assertIn("test.txt", filenames)
+            assert "test.pdf" in filenames
+            assert "test.txt" in filenames
 
     def test_send_failure(self):
         """Test handling of send failures."""
@@ -327,11 +323,11 @@ class SMTPAdapterTest(TestCase):
         }
 
         # Send should raise SendError
-        with self.assertRaises(SendError):
+        with pytest.raises(SendError):
             self.adapter.send_email(**email_data)
 
         # Verify no messages were successfully sent
-        self.assertEqual(len(self.mock_server.sent_messages), 0)
+        assert len(self.mock_server.sent_messages) == 0
 
     def test_connection_error(self):
         """Test connection error handling."""
@@ -339,7 +335,7 @@ class SMTPAdapterTest(TestCase):
         self.mock_server.should_fail = True
 
         # Connect should raise ConnectionError
-        with self.assertRaises(ConnectionError):
+        with pytest.raises(ConnectionError):
             self.adapter.connect()
 
     def test_reconnect_on_closed_connection(self):
@@ -349,7 +345,7 @@ class SMTPAdapterTest(TestCase):
 
         # Close the connection to simulate timeout or server disconnect
         self.mock_server.close()
-        self.assertFalse(self.mock_server.connected)
+        assert not self.mock_server.connected
 
         # Prepare email data
         email_data = {
@@ -362,10 +358,10 @@ class SMTPAdapterTest(TestCase):
         result = self.adapter.send_email(**email_data)
 
         # Verify success
-        self.assertTrue(result["success"])
+        assert result["success"]
 
         # Verify message was sent
-        self.assertEqual(len(self.mock_server.sent_messages), 1)
+        assert len(self.mock_server.sent_messages) == 1
 
 
 class SMTPAdapterWithSSLTest(TestCase):
@@ -405,14 +401,12 @@ class SMTPAdapterWithSSLTest(TestCase):
         self.adapter.connect()
 
         # Verify connection was established
-        self.assertTrue(self.mock_server.connected)
+        assert self.mock_server.connected
 
         # Verify SMTP_SSL was called with correct parameters
-        self.assertEqual(self.mock_server.calls[0]["method"], "__call__")
-        self.assertEqual(self.mock_server.calls[0]["args"][0], "smtp.example.com")
-        self.assertEqual(self.mock_server.calls[0]["args"][1], 465)
+        assert self.mock_server.calls[0]["method"] == "__call__"
+        assert self.mock_server.calls[0]["args"][0] == "smtp.example.com"
+        assert self.mock_server.calls[0]["args"][1] == 465
 
         # Verify STARTTLS was NOT called
-        self.assertFalse(
-            any(call["method"] == "starttls" for call in self.mock_server.calls)
-        )
+        assert not any(call["method"] == "starttls" for call in self.mock_server.calls)

@@ -1,6 +1,4 @@
-"""
-Tests for WebSocket consumers in the agent_hub app.
-"""
+"""Tests for WebSocket consumers in the agent_hub app."""
 
 from unittest.mock import AsyncMock, patch
 
@@ -19,10 +17,10 @@ class WebSocketConsumerTestCase(TransactionTestCase):
     def setUp(self):
         """Set up test user and agent profile."""
         self.user = User.objects.create_user(
-            username="testagent", password="testpass123"  # nosec B106
+            username="testagent", password="testpass123",  # nosec B106
         )
         self.agent_profile = AgentProfile.objects.create(
-            user=self.user, employee_id="EMP001", status="online"
+            user=self.user, employee_id="EMP001", status="online",
         )
 
     @database_sync_to_async
@@ -40,7 +38,7 @@ class AgentStatusConsumerTest(WebSocketConsumerTestCase):
         communicator.scope["user"] = await self.get_user()
 
         connected, subprotocol = await communicator.connect()
-        self.assertTrue(connected)
+        assert connected
 
         await communicator.disconnect()
 
@@ -50,7 +48,7 @@ class AgentStatusConsumerTest(WebSocketConsumerTestCase):
         # No user in scope
 
         connected, subprotocol = await communicator.connect()
-        self.assertFalse(connected)
+        assert not connected
 
     @patch("agent_hub.consumers.channel_layer", new_callable=AsyncMock)
     async def test_status_update_broadcast(self, mock_channel_layer):
@@ -80,7 +78,7 @@ class AgentStatusConsumerTest(WebSocketConsumerTestCase):
 
         # Should receive error message
         response = await communicator.receive_json_from()
-        self.assertIn("error", response)
+        assert "error" in response
 
         await communicator.disconnect()
 
@@ -94,7 +92,7 @@ class NotificationConsumerTest(WebSocketConsumerTestCase):
         communicator.scope["user"] = await self.get_user()
 
         connected, subprotocol = await communicator.connect()
-        self.assertTrue(connected)
+        assert connected
 
         await communicator.disconnect()
 
@@ -112,7 +110,7 @@ class NotificationConsumerTest(WebSocketConsumerTestCase):
                 "type": "notification",
                 "message": "New conversation assigned",
                 "priority": "high",
-            }
+            },
         )
 
         await communicator.disconnect()
@@ -127,16 +125,16 @@ class NotificationConsumerTest(WebSocketConsumerTestCase):
         # Send message without required fields
         await communicator.send_json_to(
             {
-                "type": "notification"
+                "type": "notification",
                 # Missing message field
-            }
+            },
         )
 
         # Should handle gracefully or send error
         try:
             response = await communicator.receive_json_from(timeout=1)
             if "error" in response:
-                self.assertIn("message", response["error"].lower())
+                assert "message" in response["error"].lower()
         except Exception:  # nosec B110
             # No response is also acceptable for invalid messages
             pass
@@ -151,10 +149,10 @@ class WebSocketIntegrationTest(WebSocketConsumerTestCase):
         """Test that multiple agents can sync status."""
         # Create second agent
         user2 = await database_sync_to_async(User.objects.create_user)(
-            username="testagent2", password="testpass123"  # nosec B106
+            username="testagent2", password="testpass123",  # nosec B106
         )
         await database_sync_to_async(AgentProfile.objects.create)(
-            user=user2, employee_id="EMP002", status="online"
+            user=user2, employee_id="EMP002", status="online",
         )
 
         # Connect both agents

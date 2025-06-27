@@ -10,7 +10,7 @@ __all__ = ["EmailMessage", "EmailAttachment"]
 
 class EmailMessage(models.Model):
     account = models.ForeignKey(
-        EmailAccount, on_delete=models.CASCADE, related_name="messages"
+        EmailAccount, on_delete=models.CASCADE, related_name="messages",
     )
     message_id = models.CharField(max_length=255, unique=True)
     external_message_id = models.CharField(max_length=255, blank=True)
@@ -18,10 +18,10 @@ class EmailMessage(models.Model):
 
     direction = models.CharField(max_length=20, choices=MessageDirection.choices)
     status = models.CharField(
-        max_length=20, choices=MessageStatus.choices, default=MessageStatus.PENDING
+        max_length=20, choices=MessageStatus.choices, default=MessageStatus.PENDING,
     )
     priority = models.CharField(
-        max_length=10, choices=MessagePriority.choices, default=MessagePriority.NORMAL
+        max_length=10, choices=MessagePriority.choices, default=MessagePriority.NORMAL,
     )
 
     # Sender/Recipient Information
@@ -65,7 +65,7 @@ class EmailMessage(models.Model):
 
     # Customer Linking
     content_type = models.ForeignKey(
-        ContentType, on_delete=models.CASCADE, null=True, blank=True
+        ContentType, on_delete=models.CASCADE, null=True, blank=True,
     )
     object_id = models.PositiveIntegerField(null=True, blank=True)
     linked_customer = GenericForeignKey("content_type", "object_id")
@@ -91,14 +91,14 @@ class EmailMessage(models.Model):
     def thread_messages(self):
         if self.thread_id:
             return EmailMessage.objects.filter(thread_id=self.thread_id).order_by(
-                "received_at"
+                "received_at",
             )
         return EmailMessage.objects.filter(id=self.id)
 
 
 class EmailAttachment(models.Model):
     message = models.ForeignKey(
-        EmailMessage, on_delete=models.CASCADE, related_name="attachments"
+        EmailMessage, on_delete=models.CASCADE, related_name="attachments",
     )
     filename = models.CharField(max_length=255)
     content_type = models.CharField(max_length=100)

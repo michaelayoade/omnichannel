@@ -14,8 +14,8 @@ from .models import (
 
 @shared_task
 def update_agent_performance_snapshots():
-    """
-    A periodic task to calculate and save agent performance metrics for the previous day.
+    """A periodic task to calculate and save agent performance metrics for the
+    previous day.
     """
     yesterday = timezone.now().date() - timedelta(days=1)
     start_time = timezone.make_aware(datetime.combine(yesterday, time.min))

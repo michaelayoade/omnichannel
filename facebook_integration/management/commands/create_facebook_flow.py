@@ -8,7 +8,7 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument(
-            "--page-id", type=str, required=True, help="Facebook Page ID"
+            "--page-id", type=str, required=True, help="Facebook Page ID",
         )
 
         parser.add_argument(
@@ -20,7 +20,7 @@ class Command(BaseCommand):
         )
 
         parser.add_argument(
-            "--force", action="store_true", help="Overwrite existing flows"
+            "--force", action="store_true", help="Overwrite existing flows",
         )
 
     def handle(self, *args, **options):
@@ -49,22 +49,21 @@ class Command(BaseCommand):
 
             self.stdout.write(
                 self.style.SUCCESS(
-                    f"Successfully created {flow_type} flow(s) for {page.page_name}"
-                )
+                    f"Successfully created {flow_type} flow(s) for {page.page_name}",
+                ),
             )
 
         except Exception as e:
-            raise CommandError(f"Flow creation failed: {str(e)}")
+            raise CommandError(f"Flow creation failed: {e!s}")
 
     def _create_welcome_flow(self, page, force=False):
         """Create a welcome flow."""
-
         flow_name = f"Welcome Flow - {page.page_name}"
 
         if (
             not force
             and FacebookConversationFlow.objects.filter(
-                page=page, name=flow_name
+                page=page, name=flow_name,
             ).exists()
         ):
             self.stdout.write(f"Welcome flow already exists for {page.page_name}")
@@ -111,7 +110,10 @@ class Command(BaseCommand):
                 "actions": [
                     {
                         "type": "send_text",
-                        "text": f"Great! {page.page_name} offers amazing services and products. Here's what we can do for you:",
+                        "text": (
+                            f"Great! {page.page_name} offers amazing services and "
+                            f"products. Here's what we can do for you:"
+                        ),
                     },
                     {
                         "type": "send_quick_replies",
@@ -169,7 +171,12 @@ class Command(BaseCommand):
                     {"type": "send_text", "text": "We'd love to hear from you! 📞"},
                     {
                         "type": "send_text",
-                        "text": "You can reach us at:\\n\\n📧 Email: contact@company.com\\n📞 Phone: +1 (555) 123-4567\\n🕒 Hours: Mon-Fri 9AM-6PM",
+                        "text": (
+                            "You can reach us at:\n\n"
+                            "📧 Email: contact@company.com\n"
+                            "📞 Phone: +1 (555) 123-4567\n"
+                            "🕒 Hours: Mon-Fri 9AM-6PM"
+                        ),
                     },
                 ],
                 "next": "end",
@@ -178,7 +185,10 @@ class Command(BaseCommand):
                 "actions": [
                     {
                         "type": "send_text",
-                        "text": "I can help you with information about our services, support, or connecting you with our team.",
+                        "text": (
+                            "I can help you with information about our services, support, "
+                            "or connecting you with our team."
+                        ),
                     },
                     {
                         "type": "send_quick_replies",
@@ -203,9 +213,12 @@ class Command(BaseCommand):
                 "actions": [
                     {
                         "type": "send_text",
-                        "text": "Thanks for chatting with us! Feel free to message us anytime if you need help. 😊",
-                    }
-                ]
+                        "text": (
+                            "Thanks for chatting with us! Feel free to message us anytime if "
+                            "you need help. 😊"
+                        ),
+                    },
+                ],
             },
         }
 
@@ -227,17 +240,16 @@ class Command(BaseCommand):
 
     def _create_lead_generation_flow(self, page, force=False):
         """Create a lead generation flow."""
-
         flow_name = f"Lead Generation - {page.page_name}"
 
         if (
             not force
             and FacebookConversationFlow.objects.filter(
-                page=page, name=flow_name
+                page=page, name=flow_name,
             ).exists()
         ):
             self.stdout.write(
-                f"Lead generation flow already exists for {page.page_name}"
+                f"Lead generation flow already exists for {page.page_name}",
             )
             return
 
@@ -246,7 +258,10 @@ class Command(BaseCommand):
                 "actions": [
                     {
                         "type": "send_text",
-                        "text": "Great! I'd love to learn more about your needs so we can help you better. 📋",
+                        "text": (
+                            "Great! I'd love to learn more about your needs so we can help "
+                            "you better. 📋"
+                        ),
                     },
                     {"type": "send_text", "text": "What's your name?"},
                 ],
@@ -321,11 +336,16 @@ class Command(BaseCommand):
                     },
                     {
                         "type": "send_text",
-                        "text": "Excellent! Thanks for providing that information, {{lead_name}}. 🎉",
+                        "text": (
+                            "Excellent! Thanks for providing that information, {{lead_name}}. 🎉"
+                        ),
                     },
                     {
                         "type": "send_text",
-                        "text": "Our sales team will reach out to you at {{lead_email}} within 24 hours to discuss your {{lead_interest}} needs.",
+                        "text": (
+                            "Our sales team will reach out to you at {{lead_email}} within 24 hours "
+                            "to discuss your {{lead_interest}} needs."
+                        ),
                     },
                     {
                         "type": "send_text",
@@ -338,9 +358,11 @@ class Command(BaseCommand):
                 "actions": [
                     {
                         "type": "send_text",
-                        "text": "Thanks again for your interest! We're excited to work with you. 🚀",
-                    }
-                ]
+                        "text": (
+                            "Thanks again for your interest! We're excited to work with you. 🚀"
+                        ),
+                    },
+                ],
             },
         }
 
@@ -362,17 +384,16 @@ class Command(BaseCommand):
 
     def _create_customer_service_flow(self, page, force=False):
         """Create a customer service flow."""
-
         flow_name = f"Customer Service - {page.page_name}"
 
         if (
             not force
             and FacebookConversationFlow.objects.filter(
-                page=page, name=flow_name
+                page=page, name=flow_name,
             ).exists()
         ):
             self.stdout.write(
-                f"Customer service flow already exists for {page.page_name}"
+                f"Customer service flow already exists for {page.page_name}",
             )
             return
 
@@ -421,7 +442,10 @@ class Command(BaseCommand):
                 "actions": [
                     {
                         "type": "send_text",
-                        "text": "I understand you're having a technical issue. Let me help you troubleshoot! 🔧",
+                        "text": (
+                            "I understand you're having a technical issue. Let me help you "
+                            "troubleshoot! 🔧"
+                        ),
                     },
                     {
                         "type": "send_quick_replies",
@@ -460,7 +484,10 @@ class Command(BaseCommand):
                     },
                     {
                         "type": "send_text",
-                        "text": "For account security, I'll need to connect you with our billing team who can verify your account and assist you.",
+                        "text": (
+                            "For account security, I'll need to connect you with our billing team "
+                            "who can verify your account and assist you."
+                        ),
                     },
                 ],
                 "next": "escalate_to_billing",
@@ -473,7 +500,10 @@ class Command(BaseCommand):
                     },
                     {
                         "type": "send_text",
-                        "text": "Let me connect you with our account specialists who can securely access your account and help resolve the issue.",
+                        "text": (
+                            "Let me connect you with our account specialists who can securely "
+                            "access your account and help resolve the issue."
+                        ),
                     },
                 ],
                 "next": "escalate_to_account",
@@ -509,7 +539,7 @@ class Command(BaseCommand):
                     {
                         "type": "send_text",
                         "text": "Connecting you with our billing team now... 💳",
-                    }
+                    },
                 ],
                 "next": "end",
             },
@@ -518,7 +548,7 @@ class Command(BaseCommand):
                     {
                         "type": "send_text",
                         "text": "Transferring you to our account specialists... 👤",
-                    }
+                    },
                 ],
                 "next": "end",
             },
@@ -527,7 +557,7 @@ class Command(BaseCommand):
                     {
                         "type": "send_text",
                         "text": "Let me connect you with a support agent who can help... 💬",
-                    }
+                    },
                 ],
                 "next": "end",
             },
@@ -536,8 +566,8 @@ class Command(BaseCommand):
                     {
                         "type": "send_text",
                         "text": "Thank you for contacting support. We're here to help! 🤝",
-                    }
-                ]
+                    },
+                ],
             },
         }
 
@@ -559,13 +589,12 @@ class Command(BaseCommand):
 
     def _create_faq_flow(self, page, force=False):
         """Create an FAQ flow."""
-
         flow_name = f"FAQ - {page.page_name}"
 
         if (
             not force
             and FacebookConversationFlow.objects.filter(
-                page=page, name=flow_name
+                page=page, name=flow_name,
             ).exists()
         ):
             self.stdout.write(f"FAQ flow already exists for {page.page_name}")
@@ -737,8 +766,8 @@ class Command(BaseCommand):
                     {
                         "type": "send_text",
                         "text": "Hope that answered your question! Feel free to ask if you need anything else. 😊",
-                    }
-                ]
+                    },
+                ],
             },
         }
 

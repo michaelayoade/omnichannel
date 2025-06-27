@@ -51,7 +51,7 @@ class InstagramAccountAdmin(admin.ModelAdmin):
                     "biography",
                     "website",
                     "followers_count",
-                )
+                ),
             },
         ),
         (
@@ -74,7 +74,7 @@ class InstagramAccountAdmin(admin.ModelAdmin):
                     "health_status_display",
                     "last_health_check",
                     "last_error_message",
-                )
+                ),
             },
         ),
         ("Settings", {"fields": ("auto_reply_enabled", "story_replies_enabled")}),
@@ -85,7 +85,7 @@ class InstagramAccountAdmin(admin.ModelAdmin):
                     "total_messages_sent",
                     "total_messages_received",
                     "total_story_replies",
-                )
+                ),
             },
         ),
         (
@@ -97,7 +97,7 @@ class InstagramAccountAdmin(admin.ModelAdmin):
     def health_status_display(self, obj):
         color = "green" if obj.is_healthy else "red"
         return format_html(
-            '<span style="color: {};">{}</span>', color, obj.health_status
+            '<span style="color: {};">{}</span>', color, obj.health_status,
         )
 
     health_status_display.short_description = "Health Status"
@@ -182,7 +182,7 @@ class InstagramMessageAdmin(admin.ModelAdmin):
                     "message_type",
                     "direction",
                     "status",
-                )
+                ),
             },
         ),
         ("Content", {"fields": ("message_preview", "text", "media_url", "media_type")}),
@@ -212,7 +212,7 @@ class InstagramMessageAdmin(admin.ModelAdmin):
             return obj.text[:100] + "..." if len(obj.text) > 100 else obj.text
         elif obj.media_url:
             return format_html(
-                '<a href="{}" target="_blank">View Media</a>', obj.media_url
+                '<a href="{}" target="_blank">View Media</a>', obj.media_url,
             )
         return "-"
 
@@ -221,7 +221,7 @@ class InstagramMessageAdmin(admin.ModelAdmin):
     def conversation_link(self, obj):
         if obj.conversation:
             url = reverse(
-                "admin:conversations_conversation_change", args=[obj.conversation.id]
+                "admin:conversations_conversation_change", args=[obj.conversation.id],
             )
             return format_html('<a href="{}">{}</a>', url, obj.conversation.id)
         return "-"

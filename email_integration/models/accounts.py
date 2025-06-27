@@ -13,10 +13,10 @@ class EmailAccount(models.Model):
     name = models.CharField(max_length=200)
     email_address = models.EmailField(unique=True)
     account_type = models.CharField(
-        max_length=20, choices=AccountType.choices, default=AccountType.INDIVIDUAL
+        max_length=20, choices=AccountType.choices, default=AccountType.INDIVIDUAL,
     )
     status = models.CharField(
-        max_length=20, choices=AccountStatus.choices, default=AccountStatus.INACTIVE
+        max_length=20, choices=AccountStatus.choices, default=AccountStatus.INACTIVE,
     )
     department = models.CharField(max_length=100, blank=True)
 
@@ -44,7 +44,7 @@ class EmailAccount(models.Model):
 
     # Incoming Email Configuration
     incoming_protocol = models.CharField(
-        max_length=10, choices=Protocol.choices, default=Protocol.IMAP
+        max_length=10, choices=Protocol.choices, default=Protocol.IMAP,
     )
     incoming_server = models.CharField(max_length=200)
     incoming_port = models.IntegerField(default=get_config("IMAP_DEFAULT_PORT", 993))
@@ -58,7 +58,7 @@ class EmailAccount(models.Model):
         help_text="Polling frequency in seconds",
     )
     max_emails_per_poll = models.IntegerField(
-        default=get_config("MAX_MESSAGES_PER_POLL", 50)
+        default=get_config("MAX_MESSAGES_PER_POLL", 50),
     )
     auto_polling_enabled = models.BooleanField(default=True)
 
@@ -89,11 +89,12 @@ class EmailAccount(models.Model):
         return self.status == AccountStatus.ACTIVE and not self.last_error_message
 
     def get_credentials(self):
-        """
-        Get account credentials securely.
+        """Get account credentials securely.
 
-        Returns:
+        Returns
+        -------
             dict: Dictionary with decrypted credentials
+
         """
         return {
             "smtp": {
@@ -117,7 +118,7 @@ class EmailAccount(models.Model):
 
 class EmailContact(models.Model):
     account = models.ForeignKey(
-        EmailAccount, on_delete=models.CASCADE, related_name="contacts"
+        EmailAccount, on_delete=models.CASCADE, related_name="contacts",
     )
     email_address = models.EmailField()
     display_name = models.CharField(max_length=200, blank=True)

@@ -11,9 +11,7 @@ User = get_user_model()
 
 @database_sync_to_async
 def get_user_from_token(token_key):
-    """
-    Authenticates a user from a JWT access token.
-    """
+    """Authenticates a user from a JWT access token."""
     try:
         access_token = AccessToken(token_key)
         user_id = access_token["user_id"]
@@ -23,8 +21,7 @@ def get_user_from_token(token_key):
 
 
 class TokenAuthMiddleware(BaseMiddleware):
-    """
-    Custom middleware for Django Channels to authenticate users via a JWT token
+    """Custom middleware for Django Channels to authenticate users via a JWT token
     passed in the query string.
     """
 

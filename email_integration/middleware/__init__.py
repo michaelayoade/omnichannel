@@ -1,5 +1,4 @@
-"""
-Middleware package for the email integration app.
+"""Middleware package for the email integration app.
 
 This package provides security, logging, and monitoring middleware
 components that can be added to Django's middleware stack.

@@ -76,7 +76,7 @@ def update_email_statistics():
 
             sent_count = (
                 EmailMessage.objects.filter(
-                    account=contact.account, direction="outbound"
+                    account=contact.account, direction="outbound",
                 )
                 .filter(to_emails__contains=contact.email_address)
                 .count()
@@ -84,7 +84,7 @@ def update_email_statistics():
 
             last_email = (
                 EmailMessage.objects.filter(
-                    account=contact.account, from_email=contact.email_address
+                    account=contact.account, from_email=contact.email_address,
                 )
                 .order_by("-received_at")
                 .first()
@@ -110,7 +110,7 @@ def process_bounced_emails():
         # For now, we'll just identify failed messages that might be bounces
 
         failed_messages = EmailMessage.objects.filter(
-            status="failed", direction="outbound", error_code__isnull=False
+            status="failed", direction="outbound", error_code__isnull=False,
         )
 
         bounce_count = 0

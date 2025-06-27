@@ -45,14 +45,14 @@ class Command(BaseCommand):
         if options["business_account_id"]:
             try:
                 business_account = WhatsAppBusinessAccount.objects.get(
-                    business_account_id=options["business_account_id"]
+                    business_account_id=options["business_account_id"],
                 )
                 accounts = [business_account]
             except WhatsAppBusinessAccount.DoesNotExist:
                 self.stdout.write(
                     self.style.ERROR(
-                        f'Business account {options["business_account_id"]} not found'
-                    )
+                        f'Business account {options["business_account_id"]} not found',
+                    ),
                 )
                 return
         else:
@@ -67,8 +67,8 @@ class Command(BaseCommand):
         """Output monitoring data in table format."""
         self.stdout.write(
             self.style.SUCCESS(
-                f'\nWhatsApp Integration Monitor - Last {self.options["hours"]} hours'
-            )
+                f'\nWhatsApp Integration Monitor - Last {self.options["hours"]} hours',
+            ),
         )
         self.stdout.write("=" * 80)
 
@@ -109,7 +109,7 @@ class Command(BaseCommand):
         self.stdout.write(f"   ID: {account.business_account_id}")
         self.stdout.write(f"   Phone: {account.display_phone_number}")
         self.stdout.write(
-            f'   Status: {"🟢 Active" if account.is_active else "🔴 Inactive"}'
+            f'   Status: {"🟢 Active" if account.is_active else "🔴 Inactive"}',
         )
 
     def _show_message_stats(self, account):
@@ -119,16 +119,17 @@ class Command(BaseCommand):
         self.stdout.write(f'\n📨 Messages (last {self.options["hours"]}h):')
         self.stdout.write(f'   Total: {stats["total"]}')
         self.stdout.write(
-            f'   Inbound: {stats["inbound"]} | Outbound: {stats["outbound"]}'
+            f'   Inbound: {stats["inbound"]} | Outbound: {stats["outbound"]}',
         )
         self.stdout.write(
-            f'   Sent: {stats["sent"]} | Delivered: {stats["delivered"]} | Read: {stats["read"]}'
+            f'   Sent: {stats["sent"]} | Delivered: {stats["delivered"]} | '
+            f'Read: {stats["read"]}',
         )
         self.stdout.write(f'   Failed: {stats["failed"]}')
 
         if stats["failed"] > 0:
             self.stdout.write(
-                self.style.WARNING(f'   ⚠️  {stats["failed"]} failed messages detected')
+                self.style.WARNING(f'   ⚠️  {stats["failed"]} failed messages detected'),
             )
 
     def _show_webhook_stats(self, account):
@@ -138,12 +139,13 @@ class Command(BaseCommand):
         self.stdout.write(f'\n🔗 Webhooks (last {self.options["hours"]}h):')
         self.stdout.write(f'   Total: {stats["total"]}')
         self.stdout.write(
-            f'   Processed: {stats["processed"]} | Failed: {stats["failed"]} | Pending: {stats["pending"]}'
+            f'   Processed: {stats["processed"]} | Failed: {stats["failed"]} | '
+            f'Pending: {stats["pending"]}',
         )
 
         if stats["failed"] > 0:
             self.stdout.write(
-                self.style.WARNING(f'   ⚠️  {stats["failed"]} failed webhooks')
+                self.style.WARNING(f'   ⚠️  {stats["failed"]} failed webhooks'),
             )
 
     def _show_rate_limit_stats(self, account):
@@ -157,8 +159,8 @@ class Command(BaseCommand):
         if stats["rate_limit_hits"] > 0:
             self.stdout.write(
                 self.style.WARNING(
-                    f'   ⚠️  Rate limit exceeded {stats["rate_limit_hits"]} times'
-                )
+                    f'   ⚠️  Rate limit exceeded {stats["rate_limit_hits"]} times',
+                ),
             )
 
     def _show_template_stats(self, account):
@@ -168,13 +170,14 @@ class Command(BaseCommand):
         self.stdout.write("\n📋 Templates:")
         self.stdout.write(f'   Total: {stats["total"]}')
         self.stdout.write(
-            f'   Approved: {stats["approved"]} | Pending: {stats["pending"]} | Rejected: {stats["rejected"]}'
+            f'   Approved: {stats["approved"]} | Pending: {stats["pending"]} | '
+            f'Rejected: {stats["rejected"]}',
         )
 
     def _get_message_stats(self, account):
         """Get message statistics for an account."""
         messages = WhatsAppMessage.objects.filter(
-            business_account=account, created_at__gte=self.time_window
+            business_account=account, created_at__gte=self.time_window,
         )
 
         return {
@@ -191,7 +194,7 @@ class Command(BaseCommand):
     def _get_webhook_stats(self, account):
         """Get webhook statistics for an account."""
         webhooks = WhatsAppWebhookEvent.objects.filter(
-            business_account=account, created_at__gte=self.time_window
+            business_account=account, created_at__gte=self.time_window,
         )
 
         return {
@@ -207,7 +210,7 @@ class Command(BaseCommand):
         current_hour = timezone.now().replace(minute=0, second=0, microsecond=0)
 
         current_hour_limits = WhatsAppRateLimit.objects.filter(
-            business_account=account, window_start=current_hour
+            business_account=account, window_start=current_hour,
         )
 
         rate_limit_hits = WhatsAppRateLimit.objects.filter(

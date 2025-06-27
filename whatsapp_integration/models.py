@@ -28,7 +28,7 @@ class WhatsAppBusinessAccount(models.Model):
 
 class WhatsAppContact(models.Model):
     business_account = models.ForeignKey(
-        WhatsAppBusinessAccount, on_delete=models.CASCADE, related_name="contacts"
+        WhatsAppBusinessAccount, on_delete=models.CASCADE, related_name="contacts",
     )
     customer = models.ForeignKey(
         Customer,
@@ -83,16 +83,16 @@ class WhatsAppMessage(models.Model):
     ]
 
     business_account = models.ForeignKey(
-        WhatsAppBusinessAccount, on_delete=models.CASCADE, related_name="messages"
+        WhatsAppBusinessAccount, on_delete=models.CASCADE, related_name="messages",
     )
     contact = models.ForeignKey(
-        WhatsAppContact, on_delete=models.CASCADE, related_name="messages"
+        WhatsAppContact, on_delete=models.CASCADE, related_name="messages",
     )
     wa_message_id = models.CharField(max_length=100, unique=True)
     direction = models.CharField(max_length=20, choices=DIRECTION_CHOICES)
     message_type = models.CharField(max_length=20, choices=MESSAGE_TYPE_CHOICES)
     status = models.CharField(
-        max_length=20, choices=MESSAGE_STATUS_CHOICES, default="pending"
+        max_length=20, choices=MESSAGE_STATUS_CHOICES, default="pending",
     )
     content = models.TextField(blank=True)
     media_url = models.URLField(blank=True)
@@ -140,7 +140,7 @@ class WhatsAppTemplate(models.Model):
     ]
 
     business_account = models.ForeignKey(
-        WhatsAppBusinessAccount, on_delete=models.CASCADE, related_name="templates"
+        WhatsAppBusinessAccount, on_delete=models.CASCADE, related_name="templates",
     )
     name = models.CharField(max_length=512)
     status = models.CharField(max_length=20, choices=TEMPLATE_STATUS_CHOICES)
@@ -186,7 +186,7 @@ class WhatsAppWebhookEvent(models.Model):
     webhook_id = models.CharField(max_length=100, blank=True)
     payload = models.JSONField(default=dict)
     processing_status = models.CharField(
-        max_length=20, choices=PROCESSING_STATUS_CHOICES, default="pending"
+        max_length=20, choices=PROCESSING_STATUS_CHOICES, default="pending",
     )
     processed_at = models.DateTimeField(null=True, blank=True)
     error_message = models.TextField(blank=True)
@@ -202,15 +202,18 @@ class WhatsAppWebhookEvent(models.Model):
         ]
 
     def __str__(self):
-        return f"WhatsApp webhook {self.event_type} - {self.get_processing_status_display()}"
+        return (
+            f"WhatsApp webhook {self.event_type} - "
+            f"{self.get_processing_status_display()}"
+        )
 
 
 class WhatsAppMediaFile(models.Model):
     business_account = models.ForeignKey(
-        WhatsAppBusinessAccount, on_delete=models.CASCADE, related_name="media_files"
+        WhatsAppBusinessAccount, on_delete=models.CASCADE, related_name="media_files",
     )
     message = models.ForeignKey(
-        WhatsAppMessage, on_delete=models.CASCADE, related_name="media_files"
+        WhatsAppMessage, on_delete=models.CASCADE, related_name="media_files",
     )
     media_id = models.CharField(max_length=100, unique=True)
     file_path = models.FileField(upload_to="whatsapp/media/")
@@ -232,7 +235,7 @@ class WhatsAppMediaFile(models.Model):
 
 class WhatsAppRateLimit(models.Model):
     business_account = models.ForeignKey(
-        WhatsAppBusinessAccount, on_delete=models.CASCADE, related_name="rate_limits"
+        WhatsAppBusinessAccount, on_delete=models.CASCADE, related_name="rate_limits",
     )
     endpoint = models.CharField(max_length=100)
     request_count = models.IntegerField(default=0)

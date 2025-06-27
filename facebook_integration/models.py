@@ -14,11 +14,11 @@ class FacebookPage(models.Model):
 
     # Basic Information
     page_id = models.CharField(
-        max_length=100, unique=True, help_text="Facebook Page ID"
+        max_length=100, unique=True, help_text="Facebook Page ID",
     )
     page_name = models.CharField(max_length=255, help_text="Page display name")
     page_username = models.CharField(
-        max_length=100, blank=True, help_text="Page username (@page)"
+        max_length=100, blank=True, help_text="Page username (@page)",
     )
     page_category = models.CharField(max_length=100, blank=True)
     page_description = models.TextField(blank=True)
@@ -31,13 +31,13 @@ class FacebookPage(models.Model):
     # Webhook Configuration
     webhook_url = models.URLField(blank=True, help_text="Webhook endpoint URL")
     verify_token = models.CharField(
-        max_length=255, help_text="Webhook verification token"
+        max_length=255, help_text="Webhook verification token",
     )
     webhook_subscribed = models.BooleanField(default=False)
 
     # Status and Health
     status = models.CharField(
-        max_length=20, choices=PAGE_STATUS_CHOICES, default="pending"
+        max_length=20, choices=PAGE_STATUS_CHOICES, default="pending",
     )
     is_healthy = models.BooleanField(default=False)
     last_health_check = models.DateTimeField(null=True, blank=True)
@@ -83,7 +83,7 @@ class FacebookPage(models.Model):
         self.last_health_check = timezone.now()
         self.last_error_message = error_message or ""
         self.save(
-            update_fields=["is_healthy", "last_health_check", "last_error_message"]
+            update_fields=["is_healthy", "last_health_check", "last_error_message"],
         )
 
 
@@ -93,7 +93,7 @@ class FacebookUser(models.Model):
     # Facebook Information
     psid = models.CharField(max_length=100, unique=True, help_text="Page-scoped ID")
     page = models.ForeignKey(
-        FacebookPage, on_delete=models.CASCADE, related_name="users"
+        FacebookPage, on_delete=models.CASCADE, related_name="users",
     )
 
     # Profile Information
@@ -193,10 +193,10 @@ class FacebookMessage(models.Model):
 
     # Relationships
     page = models.ForeignKey(
-        FacebookPage, on_delete=models.CASCADE, related_name="messages"
+        FacebookPage, on_delete=models.CASCADE, related_name="messages",
     )
     facebook_user = models.ForeignKey(
-        FacebookUser, on_delete=models.CASCADE, related_name="messages"
+        FacebookUser, on_delete=models.CASCADE, related_name="messages",
     )
     conversation = models.ForeignKey(
         "conversations.Conversation",
@@ -208,7 +208,7 @@ class FacebookMessage(models.Model):
 
     # Message Details
     message_type = models.CharField(
-        max_length=20, choices=MESSAGE_TYPE_CHOICES, default="text"
+        max_length=20, choices=MESSAGE_TYPE_CHOICES, default="text",
     )
     direction = models.CharField(max_length=10, choices=DIRECTION_CHOICES)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="pending")
@@ -216,7 +216,7 @@ class FacebookMessage(models.Model):
     # Content
     text = models.TextField(blank=True)
     payload = models.JSONField(
-        default=dict, blank=True, help_text="Raw message payload"
+        default=dict, blank=True, help_text="Raw message payload",
     )
     quick_reply_payload = models.CharField(max_length=1000, blank=True)
 
@@ -311,7 +311,7 @@ class FacebookTemplate(models.Model):
     # Template Configuration
     template_data = models.JSONField(help_text="Template structure and content")
     variables = models.JSONField(
-        default=list, blank=True, help_text="Available variables"
+        default=list, blank=True, help_text="Available variables",
     )
 
     # Settings
@@ -382,7 +382,7 @@ class FacebookWebhookEvent(models.Model):
     event_id = models.CharField(max_length=100, unique=True)
     event_type = models.CharField(max_length=50, choices=EVENT_TYPE_CHOICES)
     page = models.ForeignKey(
-        FacebookPage, on_delete=models.CASCADE, related_name="webhook_events"
+        FacebookPage, on_delete=models.CASCADE, related_name="webhook_events",
     )
 
     # Event Data
@@ -469,13 +469,13 @@ class FacebookConversationFlow(models.Model):
 
     # Page Association
     page = models.ForeignKey(
-        FacebookPage, on_delete=models.CASCADE, related_name="conversation_flows"
+        FacebookPage, on_delete=models.CASCADE, related_name="conversation_flows",
     )
 
     # Trigger Configuration
     trigger_type = models.CharField(max_length=20, choices=TRIGGER_TYPE_CHOICES)
     trigger_value = models.CharField(
-        max_length=1000, blank=True, help_text="Keyword, payload, etc."
+        max_length=1000, blank=True, help_text="Keyword, payload, etc.",
     )
 
     # Flow Configuration
@@ -485,7 +485,7 @@ class FacebookConversationFlow(models.Model):
     # Settings
     is_active = models.BooleanField(default=True)
     priority = models.PositiveIntegerField(
-        default=0, help_text="Higher number = higher priority"
+        default=0, help_text="Higher number = higher priority",
     )
 
     # Statistics
@@ -531,7 +531,7 @@ class FacebookUserState(models.Model):
 
     # User and Page
     facebook_user = models.OneToOneField(
-        FacebookUser, on_delete=models.CASCADE, related_name="conversation_state"
+        FacebookUser, on_delete=models.CASCADE, related_name="conversation_state",
     )
 
     # Current State
@@ -594,7 +594,7 @@ class FacebookPageConfiguration(models.Model):
 
     # Page Reference
     page = models.OneToOneField(
-        FacebookPage, on_delete=models.CASCADE, related_name="configuration"
+        FacebookPage, on_delete=models.CASCADE, related_name="configuration",
     )
 
     # Messenger Profile Settings

@@ -19,7 +19,6 @@ class FacebookWebhookView(View):
 
     def get(self, request):
         """Handle webhook verification."""
-
         # Get verification parameters
         mode = request.GET.get("hub.mode")
         token = request.GET.get("hub.verify_token")
@@ -30,7 +29,7 @@ class FacebookWebhookView(View):
             try:
                 page = FacebookPage.objects.get(verify_token=token)
                 logger.info(
-                    f"Webhook verification successful for page {page.page_name}"
+                    f"Webhook verification successful for page {page.page_name}",
                 )
                 return HttpResponse(challenge)
             except FacebookPage.DoesNotExist:
@@ -41,7 +40,6 @@ class FacebookWebhookView(View):
 
     def post(self, request):
         """Handle incoming webhook events."""
-
         try:
             # Parse JSON body
             body = json.loads(request.body.decode("utf-8"))
@@ -90,10 +88,9 @@ class FacebookWebhookView(View):
             return HttpResponseBadRequest("Processing error")
 
     def _verify_signature(
-        self, body: bytes, signature: str, page: FacebookPage
+        self, body: bytes, signature: str, page: FacebookPage,
     ) -> bool:
         """Verify webhook signature."""
-
         try:
             from ..services.facebook_api import FacebookGraphAPI
 
@@ -108,7 +105,6 @@ class FacebookWebhookView(View):
 @require_http_methods(["GET", "POST"])
 def facebook_webhook_endpoint(request):
     """Simple function-based webhook endpoint."""
-
     if request.method == "GET":
         # Webhook verification
         mode = request.GET.get("hub.mode")
@@ -119,7 +115,7 @@ def facebook_webhook_endpoint(request):
             try:
                 page = FacebookPage.objects.get(verify_token=token)
                 logger.info(
-                    f"Webhook verification successful for page {page.page_name}"
+                    f"Webhook verification successful for page {page.page_name}",
                 )
                 return HttpResponse(challenge)
             except FacebookPage.DoesNotExist:
@@ -149,7 +145,7 @@ def facebook_webhook_endpoint(request):
 
                     api = FacebookGraphAPI(page)
                     if not api.verify_webhook_signature(
-                        request.body.decode("utf-8"), signature
+                        request.body.decode("utf-8"), signature,
                     ):
                         logger.warning(f"Invalid signature for page {page_id}")
                         continue
@@ -170,13 +166,13 @@ def facebook_webhook_endpoint(request):
         except Exception as e:
             logger.error(f"Webhook processing error: {e}")
             return HttpResponseBadRequest("Processing error")
+    return None
 
 
 @csrf_exempt
 @require_http_methods(["POST"])
 def facebook_test_webhook(request):
     """Test webhook endpoint for development."""
-
     try:
         body = json.loads(request.body.decode("utf-8"))
 

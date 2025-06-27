@@ -21,14 +21,14 @@ class EmailTemplate(models.Model):
     plain_content = models.TextField(blank=True)
     html_content = models.TextField(blank=True)
     variables = models.JSONField(
-        default=list, blank=True, help_text="List of template variables"
+        default=list, blank=True, help_text="List of template variables",
     )
     is_active = models.BooleanField(default=True)
     is_global = models.BooleanField(
-        default=False, help_text="Available to all accounts"
+        default=False, help_text="Available to all accounts",
     )
     created_by = models.ForeignKey(
-        User, on_delete=models.SET_NULL, null=True, blank=True
+        User, on_delete=models.SET_NULL, null=True, blank=True,
     )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

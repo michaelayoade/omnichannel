@@ -13,7 +13,7 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument(
-            "--account-id", type=int, help="Specific Instagram account ID to sync"
+            "--account-id", type=int, help="Specific Instagram account ID to sync",
         )
         parser.add_argument(
             "--sync-conversations",
@@ -46,7 +46,7 @@ class Command(BaseCommand):
 
         if dry_run:
             self.stdout.write(
-                self.style.WARNING("DRY RUN MODE - No changes will be made")
+                self.style.WARNING("DRY RUN MODE - No changes will be made"),
             )
 
         # Get accounts to sync
@@ -67,7 +67,7 @@ class Command(BaseCommand):
 
         for account in accounts:
             self.stdout.write(
-                f"\nSyncing account: @{account.username} (ID: {account.id})"
+                f"\nSyncing account: @{account.username} (ID: {account.id})",
             )
 
             # Initialize services
@@ -77,12 +77,12 @@ class Command(BaseCommand):
             try:
                 # Get conversations from Instagram API
                 conversations_data = message_service.api_client.get_conversations(
-                    limit=50
+                    limit=50,
                 )
                 conversations = conversations_data.get("data", [])
 
                 self.stdout.write(
-                    f"Found {len(conversations)} conversations on Instagram"
+                    f"Found {len(conversations)} conversations on Instagram",
                 )
 
                 for conversation_data in conversations:
@@ -92,13 +92,13 @@ class Command(BaseCommand):
                         # Get messages for this conversation
                         messages_data = (
                             message_service.api_client.get_conversation_messages(
-                                conversation_id, limit=100
+                                conversation_id, limit=100,
                             )
                         )
                         messages = messages_data.get("data", [])
 
                         self.stdout.write(
-                            f"  Processing {len(messages)} messages from conversation {conversation_id}"
+                            f"  Processing {len(messages)} messages from conversation {conversation_id}",
                         )
 
                         for message_data in messages:
@@ -108,7 +108,7 @@ class Command(BaseCommand):
                             # Skip if message is too old
                             if created_time:
                                 message_date = timezone.datetime.fromisoformat(
-                                    created_time.replace("Z", "+00:00")
+                                    created_time.replace("Z", "+00:00"),
                                 )
                                 cutoff_date = timezone.now() - timedelta(days=days_back)
                                 if message_date < cutoff_date:
@@ -118,7 +118,7 @@ class Command(BaseCommand):
                             existing_message = None
                             if not force_refresh:
                                 existing_message = InstagramMessage.objects.filter(
-                                    instagram_message_id=message_id, account=account
+                                    instagram_message_id=message_id, account=account,
                                 ).first()
 
                             if existing_message and not force_refresh:
@@ -129,7 +129,7 @@ class Command(BaseCommand):
                                     # Process the message
                                     instagram_message = (
                                         message_service.process_incoming_message(
-                                            message_data
+                                            message_data,
                                         )
                                     )
                                     total_synced += 1
@@ -138,33 +138,33 @@ class Command(BaseCommand):
                                     if sync_conversations and conversation_manager:
                                         conversation, conv_message = (
                                             conversation_manager.sync_instagram_message_to_conversation(
-                                                instagram_message
+                                                instagram_message,
                                             )
                                         )
                                         if conv_message:
                                             total_conversations_created += 1
 
                                     self.stdout.write(
-                                        f"    ✓ Synced message {message_id}"
+                                        f"    ✓ Synced message {message_id}",
                                     )
 
                                 except Exception as e:
                                     self.stdout.write(
                                         self.style.ERROR(
-                                            f"    ✗ Failed to sync message {message_id}: {str(e)}"
-                                        )
+                                            f"    ✗ Failed to sync message {message_id}: {e!s}",
+                                        ),
                                     )
                             else:
                                 self.stdout.write(
-                                    f"    [DRY RUN] Would sync message {message_id}"
+                                    f"    [DRY RUN] Would sync message {message_id}",
                                 )
                                 total_synced += 1
 
                     except Exception as e:
                         self.stdout.write(
                             self.style.ERROR(
-                                f"  Failed to get messages for conversation {conversation_id}: {str(e)}"
-                            )
+                                f"  Failed to get messages for conversation {conversation_id}: {e!s}",
+                            ),
                         )
 
                 # Update account health status
@@ -174,8 +174,8 @@ class Command(BaseCommand):
             except Exception as e:
                 self.stdout.write(
                     self.style.ERROR(
-                        f"Failed to sync account @{account.username}: {str(e)}"
-                    )
+                        f"Failed to sync account @{account.username}: {e!s}",
+                    ),
                 )
                 if not dry_run:
                     account.update_health_status(False, str(e))
@@ -188,10 +188,10 @@ class Command(BaseCommand):
         self.stdout.write(f"Messages synced: {total_synced}")
         if sync_conversations:
             self.stdout.write(
-                f"Conversation messages created: {total_conversations_created}"
+                f"Conversation messages created: {total_conversations_created}",
             )
         if dry_run:
             self.stdout.write(
-                self.style.WARNING("This was a DRY RUN - no actual changes were made")
+                self.style.WARNING("This was a DRY RUN - no actual changes were made"),
             )
         self.stdout.write("=" * 50)

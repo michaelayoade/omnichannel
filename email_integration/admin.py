@@ -54,7 +54,7 @@ class EmailAccountAdmin(admin.ModelAdmin):
                     "account_type",
                     "department",
                     "status",
-                )
+                ),
             },
         ),
         (
@@ -92,7 +92,7 @@ class EmailAccountAdmin(admin.ModelAdmin):
                     "auto_polling_enabled",
                     "poll_frequency",
                     "max_emails_per_poll",
-                )
+                ),
             },
         ),
         (
@@ -186,7 +186,7 @@ class EmailMessageAdmin(admin.ModelAdmin):
                     "direction",
                     "status",
                     "priority",
-                )
+                ),
             },
         ),
         (
@@ -199,7 +199,7 @@ class EmailMessageAdmin(admin.ModelAdmin):
                     "cc_emails",
                     "bcc_emails",
                     "reply_to_email",
-                )
+                ),
             },
         ),
         ("Content", {"fields": ("subject", "plain_body", "html_body")}),
@@ -392,7 +392,7 @@ class EmailContactAdmin(admin.ModelAdmin):
                     "first_name",
                     "last_name",
                     "organization",
-                )
+                ),
             },
         ),
         ("Customer Linking", {"fields": ("customer",)}),
@@ -476,7 +476,7 @@ class EmailBounceAdmin(admin.ModelAdmin):
 
     def message_link(self, obj):
         url = reverse(
-            "admin:email_integration_emailmessage_change", args=[obj.message.id]
+            "admin:email_integration_emailmessage_change", args=[obj.message.id],
         )
         return format_html('<a href="{}">View Message</a>', url)
 
@@ -507,7 +507,7 @@ class EmailPollLogAdmin(admin.ModelAdmin):
                     "started_at",
                     "completed_at",
                     "poll_duration",
-                )
+                ),
             },
         ),
         (
@@ -547,7 +547,7 @@ class EmailAttachmentAdmin(admin.ModelAdmin):
 
     def message_link(self, obj):
         url = reverse(
-            "admin:email_integration_emailmessage_change", args=[obj.message.id]
+            "admin:email_integration_emailmessage_change", args=[obj.message.id],
         )
         return format_html('<a href="{}">View Message</a>', url)
 

@@ -9,7 +9,7 @@ router.register(r"conversations", views.ConversationViewSet, basename="conversat
 router.register(r"messages", views.MessageViewSet, basename="message")
 router.register(r"agent-profiles", views.AgentProfileViewSet, basename="agent-profile")
 router.register(
-    r"quick-replies", views.QuickReplyTemplateViewSet, basename="quick-reply"
+    r"quick-replies", views.QuickReplyTemplateViewSet, basename="quick-reply",
 )
 router.register(
     r"performance-snapshots",

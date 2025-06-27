@@ -1,5 +1,4 @@
-"""
-Email integration services package.
+"""Email integration services package.
 
 This package contains service modules for email integration functionality,
 separated by domain responsibility.

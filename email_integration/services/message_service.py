@@ -1,5 +1,4 @@
-"""
-Message service for email integration.
+"""Message service for email integration.
 
 This module handles all operations related to email messages:
 - Sending outbound messages
@@ -29,24 +28,27 @@ class MessageService(BaseService):
     @transaction.atomic
     @with_request_id
     def send_message(self, account_id, message_data, _request_id=None):
-        """
-        Send a new email message.
+        """Send a new email message.
 
         Args:
+        ----
             account_id: ID of the account to send from
             message_data: Dictionary with message data
             _request_id: Optional request ID for logging
 
         Returns:
+        -------
             Sent EmailMessage instance
 
         Raises:
+        ------
             AccountNotFoundError: If account doesn't exist
             SendError: If sending fails
+
         """
         # Set context for logging
         logger.set_context(
-            request_id=_request_id, account_id=account_id, action="send_message"
+            request_id=_request_id, account_id=account_id, action="send_message",
         )
 
         account = self.get_account(account_id)
@@ -63,7 +65,7 @@ class MessageService(BaseService):
                 account=account,
                 message_id=message_data["message_id"],
                 conversation_id=message_data.get(
-                    "conversation_id", message_data["message_id"]
+                    "conversation_id", message_data["message_id"],
                 ),
                 subject=message_data.get("subject", ""),
                 sender=account.email_address,
@@ -103,32 +105,35 @@ class MessageService(BaseService):
                 message.save(update_fields=["status", "error_message", "updated_at"])
 
             logger.error("Failed to send message", extra={"error": str(e)})
-            raise SendError(f"Failed to send message: {str(e)}")
+            raise SendError(f"Failed to send message: {e!s}")
 
     @transaction.atomic
     def reply_to_message(self, original_message_id, reply_data):
-        """
-        Reply to an existing email message.
+        """Reply to an existing email message.
 
         Args:
+        ----
             original_message_id: ID of the message to reply to
             reply_data: Dictionary with reply data
 
         Returns:
+        -------
             Sent EmailMessage instance
 
         Raises:
+        ------
             MessageNotFoundError: If original message doesn't exist
             SendError: If sending fails
+
         """
         try:
             # Get the original message
             original = EmailMessage.objects.select_related("account").get(
-                id=original_message_id
+                id=original_message_id,
             )
         except EmailMessage.DoesNotExist:
             raise MessageNotFoundError(
-                f"Message with ID {original_message_id} not found"
+                f"Message with ID {original_message_id} not found",
             )
 
         # Set up reply data
@@ -156,28 +161,31 @@ class MessageService(BaseService):
 
     @transaction.atomic
     def forward_message(self, original_message_id, forward_data):
-        """
-        Forward an existing email message.
+        """Forward an existing email message.
 
         Args:
+        ----
             original_message_id: ID of the message to forward
             forward_data: Dictionary with forward data
 
         Returns:
+        -------
             Sent EmailMessage instance
 
         Raises:
+        ------
             MessageNotFoundError: If original message doesn't exist
             SendError: If sending fails
+
         """
         try:
             # Get the original message
             original = EmailMessage.objects.select_related("account").get(
-                id=original_message_id
+                id=original_message_id,
             )
         except EmailMessage.DoesNotExist:
             raise MessageNotFoundError(
-                f"Message with ID {original_message_id} not found"
+                f"Message with ID {original_message_id} not found",
             )
 
         # Set up forward data
@@ -200,17 +208,20 @@ class MessageService(BaseService):
         return self.send_message(original.account.id, forward_data)
 
     def get_message_by_id(self, message_id):
-        """
-        Get a message by ID.
+        """Get a message by ID.
 
         Args:
+        ----
             message_id: ID of the message to retrieve
 
         Returns:
+        -------
             EmailMessage instance
 
         Raises:
+        ------
             MessageNotFoundError: If message doesn't exist
+
         """
         try:
             return EmailMessage.objects.select_related("account").get(id=message_id)
@@ -226,10 +237,10 @@ class MessageService(BaseService):
         limit=100,
         offset=0,
     ):
-        """
-        List email messages with optional filtering.
+        """List email messages with optional filtering.
 
         Args:
+        ----
             account_id: Optional account ID to filter by
             status: Optional message status to filter by
             direction: Optional message direction to filter by
@@ -238,7 +249,9 @@ class MessageService(BaseService):
             offset: Offset for pagination
 
         Returns:
+        -------
             QuerySet of EmailMessage instances
+
         """
         # Start with all messages
         queryset = EmailMessage.objects.select_related("account")
@@ -260,14 +273,16 @@ class MessageService(BaseService):
         return queryset.order_by("-received_at", "-sent_at")[offset : offset + limit]
 
     def _create_forward_body(self, original_message):
-        """
-        Create a body for a forwarded message.
+        """Create a body for a forwarded message.
 
         Args:
+        ----
             original_message: Original EmailMessage instance
 
         Returns:
+        -------
             Formatted forward body text
+
         """
         # Format the original message as a forward
         forward_body = "\n\n---------- Forwarded message ---------\n"
@@ -319,5 +334,5 @@ def list_messages(
     """List email messages with optional filtering."""
     service = MessageService(request)
     return service.list_messages(
-        account_id, status, direction, conversation_id, limit, offset
+        account_id, status, direction, conversation_id, limit, offset,
     )

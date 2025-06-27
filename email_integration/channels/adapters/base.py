@@ -1,4 +1,4 @@
-"""email_integration.channels.adapters.base
+"""email_integration.channels.adapters.base.
 
 Generic, reusable adapter interface for all communication channels (email,
 WhatsApp, SMS, push, etc.).  Concrete channel adapters should inherit from
@@ -25,7 +25,7 @@ from __future__ import annotations
 
 import abc
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from email_integration.models import EmailAccount, EmailMessage, EmailPollLog
 
@@ -49,7 +49,7 @@ class BaseAdapter(abc.ABC):
         return f"<{self.__class__.__name__} account={self.account_id}>"
 
     @property
-    def account_id(self) -> Any:  # noqa: ANN401 – could be UUID/int etc.
+    def account_id(self) -> Any:  # – could be UUID/int etc.
         return getattr(self.account, "id", None)
 
 
@@ -59,11 +59,11 @@ class BaseOutboundAdapter(BaseAdapter):
     @abc.abstractmethod
     def send(
         self,
-        to_emails: List[str],
+        to_emails: list[str],
         subject: str,
-        plain_body: Optional[str] = None,
-        html_body: Optional[str] = None,
-        attachments: Optional[List[Dict[str, Any]]] = None,
+        plain_body: str | None = None,
+        html_body: str | None = None,
+        attachments: list[dict[str, Any]] | None = None,
         **kwargs: Any,
     ) -> EmailMessage:
         """Send a message through the channel."""

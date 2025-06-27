@@ -24,7 +24,7 @@ class SplynxSyncLog(models.Model):
 
     sync_type = models.CharField(max_length=20, choices=SYNC_TYPE_CHOICES)
     status = models.CharField(
-        max_length=20, choices=SYNC_STATUS_CHOICES, default="pending"
+        max_length=20, choices=SYNC_STATUS_CHOICES, default="pending",
     )
     started_at = models.DateTimeField(auto_now_add=True)
     completed_at = models.DateTimeField(null=True, blank=True)
@@ -47,7 +47,7 @@ class SplynxSyncLog(models.Model):
 
 class SplynxCustomerMapping(models.Model):
     customer = models.OneToOneField(
-        Customer, on_delete=models.CASCADE, related_name="splynx_mapping"
+        Customer, on_delete=models.CASCADE, related_name="splynx_mapping",
     )
     splynx_customer_id = models.CharField(max_length=100, unique=True)
     splynx_login = models.CharField(max_length=100, blank=True)
@@ -72,7 +72,7 @@ class SplynxServiceMapping(models.Model):
     ]
 
     customer_mapping = models.ForeignKey(
-        SplynxCustomerMapping, on_delete=models.CASCADE, related_name="services"
+        SplynxCustomerMapping, on_delete=models.CASCADE, related_name="services",
     )
     splynx_service_id = models.CharField(max_length=100, unique=True)
     service_name = models.CharField(max_length=200)
@@ -87,7 +87,10 @@ class SplynxServiceMapping(models.Model):
         db_table = "splynx_service_mappings"
 
     def __str__(self):
-        return f"Splynx service {self.service_name} for {self.customer_mapping.customer.full_name}"
+        return (
+            f"Splynx service {self.service_name} for "
+            f"{self.customer_mapping.customer.full_name}"
+        )
 
 
 class SplynxTicketMapping(models.Model):
@@ -107,14 +110,14 @@ class SplynxTicketMapping(models.Model):
     ]
 
     customer_mapping = models.ForeignKey(
-        SplynxCustomerMapping, on_delete=models.CASCADE, related_name="tickets"
+        SplynxCustomerMapping, on_delete=models.CASCADE, related_name="tickets",
     )
     splynx_ticket_id = models.CharField(max_length=100, unique=True)
     title = models.CharField(max_length=500)
     description = models.TextField(blank=True)
     status = models.CharField(max_length=30, choices=TICKET_STATUS_CHOICES)
     priority = models.CharField(
-        max_length=10, choices=PRIORITY_CHOICES, default="normal"
+        max_length=10, choices=PRIORITY_CHOICES, default="normal",
     )
     category = models.CharField(max_length=100, blank=True)
     assigned_to = models.CharField(max_length=100, blank=True)
@@ -123,7 +126,7 @@ class SplynxTicketMapping(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     content_type = models.ForeignKey(
-        ContentType, on_delete=models.CASCADE, null=True, blank=True
+        ContentType, on_delete=models.CASCADE, null=True, blank=True,
     )
     object_id = models.PositiveIntegerField(null=True, blank=True)
     linked_conversation = GenericForeignKey("content_type", "object_id")
@@ -146,7 +149,7 @@ class SplynxInvoiceMapping(models.Model):
     ]
 
     customer_mapping = models.ForeignKey(
-        SplynxCustomerMapping, on_delete=models.CASCADE, related_name="invoices"
+        SplynxCustomerMapping, on_delete=models.CASCADE, related_name="invoices",
     )
     splynx_invoice_id = models.CharField(max_length=100, unique=True)
     invoice_number = models.CharField(max_length=100)
@@ -164,7 +167,10 @@ class SplynxInvoiceMapping(models.Model):
         ordering = ["-created_at"]
 
     def __str__(self):
-        return f"Splynx invoice {self.invoice_number} - {self.customer_mapping.customer.full_name}"
+        return (
+            f"Splynx invoice {self.invoice_number} - "
+            f"{self.customer_mapping.customer.full_name}"
+        )
 
 
 class SplynxWebhookEvent(models.Model):
@@ -195,7 +201,7 @@ class SplynxWebhookEvent(models.Model):
     splynx_object_id = models.CharField(max_length=100)
     payload = models.JSONField(default=dict)
     processing_status = models.CharField(
-        max_length=20, choices=PROCESSING_STATUS_CHOICES, default="pending"
+        max_length=20, choices=PROCESSING_STATUS_CHOICES, default="pending",
     )
     processed_at = models.DateTimeField(null=True, blank=True)
     error_message = models.TextField(blank=True)

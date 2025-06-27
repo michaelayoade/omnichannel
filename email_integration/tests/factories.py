@@ -1,5 +1,4 @@
-"""
-Test factories for email_integration models using factory_boy.
+"""Test factories for email_integration models using factory_boy.
 This module provides reusable factories for creating test data.
 """
 
@@ -23,7 +22,7 @@ class EmailAccountFactory(DjangoModelFactory):
     auto_polling_enabled = True
     poll_frequency = 300  # 5 minutes
     last_poll_at = factory.LazyFunction(
-        lambda: timezone.now() - timezone.timedelta(minutes=10)
+        lambda: timezone.now() - timezone.timedelta(minutes=10),
     )
     created_at = factory.LazyFunction(timezone.now)
     updated_at = factory.LazyFunction(timezone.now)
@@ -68,7 +67,7 @@ class EmailMessageFactory(DjangoModelFactory):
                     "filename": f"attachment-{factory.random.randint(1, 100)}.pdf",
                     "content_type": "application/pdf",
                     "size": factory.random.randint(1000, 100000),
-                }
+                },
             ]
         )
 

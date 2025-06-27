@@ -9,7 +9,7 @@ extending the public helpers without touching call-sites.
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, List
+from typing import Any
 
 from .channels.adapters.base import BaseOutboundAdapter
 from .models import EmailMessage, EmailRule, EmailTemplate
@@ -26,7 +26,7 @@ __all__ = [
 # ---------------------------------------------------------------------------
 
 
-def rule_matches(rule: EmailRule, message: EmailMessage) -> bool:  # noqa: D401
+def rule_matches(rule: EmailRule, message: EmailMessage) -> bool:
     """Return **True** if *rule* matches *message*.
 
     Rule matching is case-insensitive and covers the most common condition types.
@@ -74,8 +74,8 @@ def rule_matches(rule: EmailRule, message: EmailMessage) -> bool:  # noqa: D401
 
 
 def execute_rule(
-    adapter: BaseOutboundAdapter, rule: EmailRule, message: EmailMessage
-) -> None:  # noqa: D401
+    adapter: BaseOutboundAdapter, rule: EmailRule, message: EmailMessage,
+) -> None:
     """Execute the *rule*'s action for *message*.
 
     All exceptions are caught and logged so Celery tasks invoking this helper do
@@ -89,9 +89,9 @@ def execute_rule(
 
     try:
         action_func(adapter, message, rule.action_data or {})
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         logger.exception(
-            "Error executing rule %s on message %s: %s", rule.id, message.id, exc
+            "Error executing rule %s on message %s: %s", rule.id, message.id, exc,
         )
 
 
@@ -101,7 +101,7 @@ def execute_rule(
 
 
 def _send_auto_reply(
-    adapter: BaseOutboundAdapter, message: EmailMessage, action_data: Dict[str, Any]
+    adapter: BaseOutboundAdapter, message: EmailMessage, action_data: dict[str, Any],
 ) -> None:
     """Send an auto-reply using a stored template."""
     template_id = action_data.get("template_id")
@@ -131,10 +131,10 @@ def _send_auto_reply(
 
 
 def _forward_message(
-    adapter: BaseOutboundAdapter, message: EmailMessage, action_data: Dict[str, Any]
+    adapter: BaseOutboundAdapter, message: EmailMessage, action_data: dict[str, Any],
 ) -> None:
     """Forward *message* to the addresses in *action_data['forward_to']*."""
-    forward_to: List[str] = action_data.get("forward_to", [])
+    forward_to: list[str] = action_data.get("forward_to", [])
     if not forward_to:
         logger.debug("Forward skipped: no recipients in action_data")
         return
@@ -142,10 +142,14 @@ def _forward_message(
     # Construct forwarded email content
     subject = f"Fwd: {message.subject}"
 
+    # Format date with fallback to N/A if not available
+    date_format = '%a, %b %d, %Y at %I:%M %p'
+    date_str = message.received_at.strftime(date_format) if message.received_at else 'N/A'
+
     forward_header = (
         f"---------- Forwarded message ---------\n"
         f"From: {message.from_name or message.from_email} <{message.from_email}>\n"
-        f"Date: {message.received_at.strftime('%a, %b %d, %Y at %I:%M %p') if message.received_at else 'N/A'}\n"
+        f"Date: {date_str}\n"
         f"Subject: {message.subject}\n"
         f"To: {', '.join(message.to_emails)}\n\n"
     )
@@ -170,7 +174,7 @@ def _forward_message(
 
 
 def _assign_message(
-    adapter: BaseOutboundAdapter, message: EmailMessage, action_data: Dict[str, Any]
+    adapter: BaseOutboundAdapter, message: EmailMessage, action_data: dict[str, Any],
 ) -> None:
     """Placeholder for assignment logic (e.g., to agent or queue)."""
     assigned_to = action_data.get("assigned_to")
@@ -183,7 +187,7 @@ def _assign_message(
 
 
 def _set_message_priority(
-    adapter: BaseOutboundAdapter, message: EmailMessage, action_data: Dict[str, Any]
+    adapter: BaseOutboundAdapter, message: EmailMessage, action_data: dict[str, Any],
 ) -> None:
     """Mutate *message.priority* according to *action_data['priority']*."""
     priority = action_data.get("priority", "normal")

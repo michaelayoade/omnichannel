@@ -39,7 +39,7 @@ def send_text_message(request: HttpRequest):
         if not all([account_id, instagram_user_id, text]):
             return JsonResponse(
                 {
-                    "error": "Missing required fields: account_id, instagram_user_id, text"
+                    "error": "Missing required fields: account_id, instagram_user_id, text",
                 },
                 status=400,
             )
@@ -47,7 +47,7 @@ def send_text_message(request: HttpRequest):
         # Get account and user
         account = get_object_or_404(InstagramAccount, id=account_id)
         instagram_user = get_object_or_404(
-            InstagramUser, instagram_user_id=instagram_user_id, account=account
+            InstagramUser, instagram_user_id=instagram_user_id, account=account,
         )
 
         # Send message
@@ -67,14 +67,14 @@ def send_text_message(request: HttpRequest):
                 "instagram_message_id": message.instagram_message_id,
                 "conversation_id": conversation.id,
                 "status": message.status,
-            }
+            },
         )
 
     except InstagramAPIError as e:
-        logger.error(f"Instagram API error: {str(e)}")
+        logger.error(f"Instagram API error: {e!s}")
         return JsonResponse({"error": str(e)}, status=500)
     except Exception as e:
-        logger.error(f"Error sending text message: {str(e)}")
+        logger.error(f"Error sending text message: {e!s}")
         return JsonResponse({"error": "Internal server error"}, status=500)
 
 
@@ -98,13 +98,13 @@ def send_image_message(request: HttpRequest):
 
         if not image_file and not image_url:
             return JsonResponse(
-                {"error": "Either image file or image_url is required"}, status=400
+                {"error": "Either image file or image_url is required"}, status=400,
             )
 
         # Get account and user
         account = get_object_or_404(InstagramAccount, id=account_id)
         instagram_user = get_object_or_404(
-            InstagramUser, instagram_user_id=instagram_user_id, account=account
+            InstagramUser, instagram_user_id=instagram_user_id, account=account,
         )
 
         # Handle image upload if file provided
@@ -132,14 +132,14 @@ def send_image_message(request: HttpRequest):
                 "conversation_id": conversation.id,
                 "status": message.status,
                 "media_url": message.media_url,
-            }
+            },
         )
 
     except InstagramAPIError as e:
-        logger.error(f"Instagram API error: {str(e)}")
+        logger.error(f"Instagram API error: {e!s}")
         return JsonResponse({"error": str(e)}, status=500)
     except Exception as e:
-        logger.error(f"Error sending image message: {str(e)}")
+        logger.error(f"Error sending image message: {e!s}")
         return JsonResponse({"error": "Internal server error"}, status=500)
 
 
@@ -179,7 +179,7 @@ def get_account_conversations(request: HttpRequest, account_id: int):
                         if last_message
                         else None
                     ),
-                }
+                },
             )
 
         return JsonResponse(
@@ -192,29 +192,29 @@ def get_account_conversations(request: HttpRequest, account_id: int):
                     "name": account.name,
                     "status": account.status,
                 },
-            }
+            },
         )
 
     except Exception as e:
-        logger.error(f"Error getting conversations: {str(e)}")
+        logger.error(f"Error getting conversations: {e!s}")
         return JsonResponse({"error": "Internal server error"}, status=500)
 
 
 @require_http_methods(["GET"])
 @login_required
 def get_conversation_messages(
-    request: HttpRequest, account_id: int, instagram_user_id: str
+    request: HttpRequest, account_id: int, instagram_user_id: str,
 ):
     """Get messages for a specific conversation."""
     try:
         account = get_object_or_404(InstagramAccount, id=account_id)
         instagram_user = get_object_or_404(
-            InstagramUser, instagram_user_id=instagram_user_id, account=account
+            InstagramUser, instagram_user_id=instagram_user_id, account=account,
         )
 
         # Get messages
         messages = InstagramMessage.objects.filter(
-            account=account, instagram_user=instagram_user
+            account=account, instagram_user=instagram_user,
         ).order_by("-timestamp")[:100]
 
         message_list = []
@@ -232,7 +232,7 @@ def get_conversation_messages(
                     "timestamp": message.timestamp,
                     "is_story_reply": message.is_story_reply,
                     "story_id": message.story_id if message.is_story_reply else None,
-                }
+                },
             )
 
         return JsonResponse(
@@ -248,11 +248,11 @@ def get_conversation_messages(
                         instagram_user.customer.id if instagram_user.customer else None
                     ),
                 },
-            }
+            },
         )
 
     except Exception as e:
-        logger.error(f"Error getting messages: {str(e)}")
+        logger.error(f"Error getting messages: {e!s}")
         return JsonResponse({"error": "Internal server error"}, status=500)
 
 
@@ -285,11 +285,11 @@ def get_account_status(request: HttpRequest, account_id: int):
                     "created_at": account.created_at,
                     "updated_at": account.updated_at,
                 },
-            }
+            },
         )
 
     except Exception as e:
-        logger.error(f"Error getting account status: {str(e)}")
+        logger.error(f"Error getting account status: {e!s}")
         return JsonResponse({"error": "Internal server error"}, status=500)
 
 
@@ -311,11 +311,11 @@ def trigger_health_check(request: HttpRequest, account_id: int):
                 "is_healthy": is_healthy,
                 "status_message": status_message,
                 "last_health_check": account.last_health_check,
-            }
+            },
         )
 
     except Exception as e:
-        logger.error(f"Error triggering health check: {str(e)}")
+        logger.error(f"Error triggering health check: {e!s}")
         return JsonResponse({"error": "Internal server error"}, status=500)
 
 
@@ -341,11 +341,11 @@ def list_instagram_accounts(request: HttpRequest):
                     "total_messages_received": account.total_messages_received,
                     "followers_count": account.followers_count,
                     "created_at": account.created_at,
-                }
+                },
             )
 
         return JsonResponse({"success": True, "accounts": account_list})
 
     except Exception as e:
-        logger.error(f"Error listing accounts: {str(e)}")
+        logger.error(f"Error listing accounts: {e!s}")
         return JsonResponse({"error": "Internal server error"}, status=500)

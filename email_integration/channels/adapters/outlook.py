@@ -1,5 +1,4 @@
-"""
-Outlook API adapter implementation.
+"""Outlook API adapter implementation.
 
 Provides email operations via the Microsoft Graph API for Outlook/Office 365,
 supporting OAuth2 authentication, message fetching, and attachment handling.
@@ -8,7 +7,7 @@ supporting OAuth2 authentication, message fetching, and attachment handling.
 import base64
 import uuid
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import msal
 import requests
@@ -31,19 +30,19 @@ logger = ContextLogger(__name__)
 
 
 class OutlookAdapter(BaseInboundAdapter):
-    """
-    Outlook/Microsoft Graph API adapter for sending and receiving emails.
+    """Outlook/Microsoft Graph API adapter for sending and receiving emails.
 
     Uses OAuth2 authentication to access Microsoft Graph API for email operations.
     Provides functionality to fetch and parse messages from Office 365/Outlook.
     """
 
     def __init__(self, account):
-        """
-        Initialize the Outlook adapter with an email account.
+        """Initialize the Outlook adapter with an email account.
 
         Args:
+        ----
             account: The EmailAccount model instance
+
         """
         self.account = account
         self.graph_endpoint = "https://graph.microsoft.com/v1.0"
@@ -64,11 +63,12 @@ class OutlookAdapter(BaseInboundAdapter):
         self._check_oauth2_config()
 
     def _check_oauth2_config(self) -> None:
-        """
-        Check if required OAuth2 configuration is available.
+        """Check if required OAuth2 configuration is available.
 
-        Raises:
+        Raises
+        ------
             ConfigurationError: If OAuth2 configuration is missing
+
         """
         settings = self.account.server_settings or {}
         required_keys = ["client_id", "client_secret", "refresh_token"]
@@ -79,33 +79,37 @@ class OutlookAdapter(BaseInboundAdapter):
                 logger.error(error_msg)
                 raise ConfigurationError(error_msg)
 
-    def _get_credentials(self) -> Dict[str, Any]:
-        """
-        Get OAuth2 credentials for Microsoft Graph API access.
+    def _get_credentials(self) -> dict[str, Any]:
+        """Get OAuth2 credentials for Microsoft Graph API access.
 
-        Returns:
+        Returns
+        -------
             Dictionary with credentials for Microsoft Graph API
 
-        Raises:
+        Raises
+        ------
             AuthenticationError: If credentials cannot be obtained
+
         """
         try:
             credentials = self.account.get_credentials()
             return credentials.get("oauth2", {})
         except Exception as e:
-            error_msg = f"Failed to get OAuth2 credentials: {str(e)}"
+            error_msg = f"Failed to get OAuth2 credentials: {e!s}"
             logger.error(error_msg)
             raise AuthenticationError(error_msg)
 
     def _get_token(self) -> str:
-        """
-        Get an access token for Microsoft Graph API.
+        """Get an access token for Microsoft Graph API.
 
-        Returns:
+        Returns
+        -------
             Access token string
 
-        Raises:
+        Raises
+        ------
             AuthenticationError: If token cannot be obtained
+
         """
         try:
             credentials = self._get_credentials()
@@ -121,7 +125,10 @@ class OutlookAdapter(BaseInboundAdapter):
             app = msal.ConfidentialClientApplication(
                 client_id=credentials.get("client_id"),
                 client_credential=credentials.get("client_secret"),
-                authority=f"https://login.microsoftonline.com/{credentials.get('tenant_id', 'common')}",
+                authority=(
+                    f"https://login.microsoftonline.com/"
+                    f"{credentials.get('tenant_id', 'common')}"
+                ),
             )
 
             result = app.acquire_token_by_refresh_token(
@@ -147,17 +154,18 @@ class OutlookAdapter(BaseInboundAdapter):
             return self.token.get("access_token")
 
         except Exception as e:
-            error_msg = f"Failed to get access token: {str(e)}"
+            error_msg = f"Failed to get access token: {e!s}"
             logger.error(error_msg)
             raise AuthenticationError(error_msg)
 
     def connect(self) -> None:
-        """
-        Connect to Microsoft Graph API by obtaining an access token.
+        """Connect to Microsoft Graph API by obtaining an access token.
 
-        Raises:
+        Raises
+        ------
             ConnectionError: If connection cannot be established
             AuthenticationError: If authentication fails
+
         """
         try:
             logger.info("Connecting to Microsoft Graph API")
@@ -200,45 +208,49 @@ class OutlookAdapter(BaseInboundAdapter):
             raise
 
         except requests.RequestException as e:
-            error_msg = f"HTTP error connecting to Microsoft Graph API: {str(e)}"
+            error_msg = f"HTTP error connecting to Microsoft Graph API: {e!s}"
             logger.error(error_msg)
             raise ConnectionError(error_msg)
 
         except Exception as e:
-            error_msg = f"Failed to connect to Microsoft Graph API: {str(e)}"
+            error_msg = f"Failed to connect to Microsoft Graph API: {e!s}"
             logger.error(error_msg)
             raise ConnectionError(error_msg)
 
     def authenticate(self) -> None:
-        """
-        Authenticate to Microsoft Graph API.
+        """Authenticate to Microsoft Graph API.
 
         Authenticates by obtaining a valid access token.
 
-        Raises:
+        Raises
+        ------
             AuthenticationError: If authentication fails
+
         """
         try:
             # Get a fresh token
             self._get_token()
         except Exception as e:
-            error_msg = f"Authentication failed: {str(e)}"
+            error_msg = f"Authentication failed: {e!s}"
             logger.error(error_msg)
             raise AuthenticationError(error_msg)
 
-    def fetch_messages(self, since_date=None, limit=None) -> List[Dict[str, Any]]:
-        """
-        Fetch messages from Outlook/Office 365 via Microsoft Graph API.
+    def fetch_messages(self, since_date=None, limit=None) -> list[dict[str, Any]]:
+        """Fetch messages from Outlook/Office 365 via Microsoft Graph API.
 
         Args:
+        ----
             since_date: Optional datetime to fetch messages since
             limit: Maximum number of messages to fetch
 
         Returns:
+        -------
             List of parsed email message dictionaries
 
         Raises:
+        ------
             FetchError: If messages cannot be fetched
+
         """
         try:
             # Make sure we have a token
@@ -267,7 +279,7 @@ class OutlookAdapter(BaseInboundAdapter):
             # Get message list
             url = f"{self.graph_endpoint}/me/messages?$top={limit}{date_filter}"
             response = requests.get(
-                url, headers=headers, timeout=self.connection_timeout
+                url, headers=headers, timeout=self.connection_timeout,
             )
 
             if response.status_code != 200:
@@ -288,7 +300,7 @@ class OutlookAdapter(BaseInboundAdapter):
                     if parsed_msg:
                         parsed_messages.append(parsed_msg)
                 except Exception as e:
-                    logger.warning(f"Failed to parse message: {str(e)}")
+                    logger.warning(f"Failed to parse message: {e!s}")
                     continue
 
             logger.info(f"Successfully fetched {len(parsed_messages)} messages")
@@ -299,26 +311,28 @@ class OutlookAdapter(BaseInboundAdapter):
             raise
 
         except requests.RequestException as e:
-            error_msg = f"HTTP error fetching messages: {str(e)}"
+            error_msg = f"HTTP error fetching messages: {e!s}"
             logger.error(error_msg)
             raise FetchError(error_msg)
 
         except Exception as e:
-            error_msg = f"Failed to fetch messages: {str(e)}"
+            error_msg = f"Failed to fetch messages: {e!s}"
             logger.exception(error_msg)
             raise FetchError(error_msg)
 
     def _parse_outlook_message(
-        self, msg_data: Dict[str, Any]
-    ) -> Optional[Dict[str, Any]]:
-        """
-        Parse an Outlook/Graph API message into our standard format.
+        self, msg_data: dict[str, Any],
+    ) -> dict[str, Any] | None:
+        """Parse an Outlook/Graph API message into our standard format.
 
         Args:
+        ----
             msg_data: Message data from Microsoft Graph API
 
         Returns:
+        -------
             Dictionary containing parsed email fields or None if parsing failed
+
         """
         try:
             # Extract basic message info
@@ -397,18 +411,20 @@ class OutlookAdapter(BaseInboundAdapter):
             }
 
         except Exception as e:
-            logger.warning(f"Failed to parse Outlook message: {str(e)}")
+            logger.warning(f"Failed to parse Outlook message: {e!s}")
             return None
 
-    def _fetch_attachments(self, message_id: str) -> List[Attachment]:
-        """
-        Fetch attachments for a message from Microsoft Graph API.
+    def _fetch_attachments(self, message_id: str) -> list[Attachment]:
+        """Fetch attachments for a message from Microsoft Graph API.
 
         Args:
+        ----
             message_id: The message ID
 
         Returns:
+        -------
             List of Attachment model instances
+
         """
         attachments = []
 
@@ -422,7 +438,7 @@ class OutlookAdapter(BaseInboundAdapter):
             # Get attachment list
             url = f"{self.graph_endpoint}/me/messages/{message_id}/attachments"
             response = requests.get(
-                url, headers=headers, timeout=self.connection_timeout
+                url, headers=headers, timeout=self.connection_timeout,
             )
 
             if response.status_code != 200:
@@ -453,7 +469,7 @@ class OutlookAdapter(BaseInboundAdapter):
                         attachment = Attachment(
                             name=filename,
                             content_type=att.get(
-                                "contentType", "application/octet-stream"
+                                "contentType", "application/octet-stream",
                             ),
                             size=len(content_bytes),
                         )
@@ -463,25 +479,27 @@ class OutlookAdapter(BaseInboundAdapter):
                         attachments.append(attachment)
 
                 except Exception as e:
-                    logger.warning(f"Failed to process attachment: {str(e)}")
+                    logger.warning(f"Failed to process attachment: {e!s}")
                     continue
 
         except Exception as e:
             logger.warning(
-                f"Failed to fetch attachments for message {message_id}: {str(e)}"
+                f"Failed to fetch attachments for message {message_id}: {e!s}",
             )
 
         return attachments
 
     def delete_message(self, message_id: str) -> bool:
-        """
-        Delete a message via Microsoft Graph API.
+        """Delete a message via Microsoft Graph API.
 
         Args:
+        ----
             message_id: The message ID to delete
 
         Returns:
+        -------
             True if successful, False otherwise
+
         """
         try:
             token = self._get_token()
@@ -493,7 +511,7 @@ class OutlookAdapter(BaseInboundAdapter):
             # Delete the message
             url = f"{self.graph_endpoint}/me/messages/{message_id}"
             response = requests.delete(
-                url, headers=headers, timeout=self.connection_timeout
+                url, headers=headers, timeout=self.connection_timeout,
             )
 
             if response.status_code in (204, 200):
@@ -504,12 +522,11 @@ class OutlookAdapter(BaseInboundAdapter):
                 return False
 
         except Exception as e:
-            logger.error(f"Failed to delete message {message_id}: {str(e)}")
+            logger.error(f"Failed to delete message {message_id}: {e!s}")
             return False
 
     def disconnect(self) -> None:
-        """
-        Disconnect from the Microsoft Graph API.
+        """Disconnect from the Microsoft Graph API.
 
         For API-based connections, we simply invalidate the token.
         """
@@ -517,16 +534,18 @@ class OutlookAdapter(BaseInboundAdapter):
         logger.debug("Disconnected from Microsoft Graph API")
 
     @classmethod
-    def get_auth_url(cls, redirect_uri: str, state: str = None) -> str:
-        """
-        Get the OAuth2 authorization URL for Microsoft.
+    def get_auth_url(cls, redirect_uri: str, state: str | None = None) -> str:
+        """Get the OAuth2 authorization URL for Microsoft.
 
         Args:
+        ----
             redirect_uri: URI to redirect to after auth
             state: Optional state parameter for security
 
         Returns:
+        -------
             Authorization URL to redirect the user to
+
         """
         client_id = get_config("OUTLOOK_CLIENT_ID")
         tenant_id = get_config("OUTLOOK_TENANT_ID", "common")
@@ -551,19 +570,22 @@ class OutlookAdapter(BaseInboundAdapter):
         return auth_url
 
     @classmethod
-    def exchange_code(cls, code: str, redirect_uri: str) -> Dict[str, Any]:
-        """
-        Exchange authorization code for OAuth tokens.
+    def exchange_code(cls, code: str, redirect_uri: str) -> dict[str, Any]:
+        """Exchange authorization code for OAuth tokens.
 
         Args:
+        ----
             code: Authorization code from OAuth2 redirect
             redirect_uri: Redirect URI used in authorization
 
         Returns:
+        -------
             Dictionary with token information
 
         Raises:
+        ------
             AuthenticationError: If token exchange fails
+
         """
         client_id = get_config("OUTLOOK_CLIENT_ID")
         client_secret = get_config("OUTLOOK_CLIENT_SECRET")
@@ -609,11 +631,11 @@ class OutlookAdapter(BaseInboundAdapter):
             }
 
         except requests.RequestException as e:
-            error_msg = f"HTTP error exchanging code: {str(e)}"
+            error_msg = f"HTTP error exchanging code: {e!s}"
             logger.error(error_msg)
             raise AuthenticationError(error_msg)
 
         except Exception as e:
-            error_msg = f"Failed to exchange OAuth2 code: {str(e)}"
+            error_msg = f"Failed to exchange OAuth2 code: {e!s}"
             logger.error(error_msg)
             raise AuthenticationError(error_msg)

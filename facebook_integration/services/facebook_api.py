@@ -3,7 +3,6 @@ import hmac
 import json
 import logging
 import time
-from typing import Dict, List, Tuple
 
 import requests
 from django.utils import timezone
@@ -28,10 +27,10 @@ class FacebookGraphAPI:
         self,
         method: str,
         endpoint: str,
-        data: Dict = None,
-        files: Dict = None,
+        data: dict | None = None,
+        files: dict | None = None,
         timeout: int = 30,
-    ) -> Tuple[bool, Dict]:
+    ) -> tuple[bool, dict]:
         """Make a request to Facebook Graph API with error handling."""
         url = f"{self.BASE_URL}/{endpoint}"
 
@@ -47,7 +46,7 @@ class FacebookGraphAPI:
             elif method.upper() == "POST":
                 if files:
                     response = requests.post(
-                        url, params=params, data=data, files=files, timeout=timeout
+                        url, params=params, data=data, files=files, timeout=timeout,
                     )
                 else:
                     headers = {"Content-Type": "application/json"}
@@ -73,7 +72,7 @@ class FacebookGraphAPI:
             if hasattr(e, "response") and e.response is not None:
                 try:
                     error_detail = e.response.json()
-                except:
+                except Exception:
                     error_detail = {"error": str(e)}
             else:
                 error_detail = {"error": str(e)}
@@ -86,14 +85,14 @@ class FacebookGraphAPI:
             return False
 
         expected_signature = hmac.new(
-            self.app_secret.encode("utf-8"), payload.encode("utf-8"), hashlib.sha1
+            self.app_secret.encode("utf-8"), payload.encode("utf-8"), hashlib.sha1,
         ).hexdigest()
 
         return hmac.compare_digest(signature[5:], expected_signature)
 
     def send_text_message(
-        self, recipient_id: str, text: str, quick_replies: List[Dict] = None
-    ) -> Tuple[bool, Dict]:
+        self, recipient_id: str, text: str, quick_replies: list[dict] | None = None,
+    ) -> tuple[bool, dict]:
         """Send a text message to a user."""
         message_data = {"recipient": {"id": recipient_id}, "message": {"text": text}}
 
@@ -106,10 +105,10 @@ class FacebookGraphAPI:
         self,
         recipient_id: str,
         attachment_type: str,
-        attachment_url: str = None,
-        attachment_id: str = None,
+        attachment_url: str | None = None,
+        attachment_id: str | None = None,
         is_reusable: bool = False,
-    ) -> Tuple[bool, Dict]:
+    ) -> tuple[bool, dict]:
         """Send an attachment (image, video, audio, file)."""
         message_data = {
             "recipient": {"id": recipient_id},
@@ -123,33 +122,33 @@ class FacebookGraphAPI:
             }
         elif attachment_id:
             message_data["message"]["attachment"]["payload"] = {
-                "attachment_id": attachment_id
+                "attachment_id": attachment_id,
             }
         else:
             return False, {
-                "error": "Either attachment_url or attachment_id must be provided"
+                "error": "Either attachment_url or attachment_id must be provided",
             }
 
         return self._make_request("POST", "me/messages", message_data)
 
     def upload_attachment(
-        self, file_url: str, attachment_type: str
-    ) -> Tuple[bool, Dict]:
+        self, file_url: str, attachment_type: str,
+    ) -> tuple[bool, dict]:
         """Upload an attachment and get reusable attachment ID."""
         data = {
             "message": {
                 "attachment": {
                     "type": attachment_type,
                     "payload": {"url": file_url, "is_reusable": True},
-                }
-            }
+                },
+            },
         }
 
         return self._make_request("POST", "me/message_attachments", data)
 
     def send_template_message(
-        self, recipient_id: str, template_data: Dict
-    ) -> Tuple[bool, Dict]:
+        self, recipient_id: str, template_data: dict,
+    ) -> tuple[bool, dict]:
         """Send a template message (button, generic, list, etc.)."""
         message_data = {
             "recipient": {"id": recipient_id},
@@ -159,16 +158,16 @@ class FacebookGraphAPI:
         return self._make_request("POST", "me/messages", message_data)
 
     def send_button_template(
-        self, recipient_id: str, text: str, buttons: List[Dict]
-    ) -> Tuple[bool, Dict]:
+        self, recipient_id: str, text: str, buttons: list[dict],
+    ) -> tuple[bool, dict]:
         """Send a button template message."""
         template_data = {"template_type": "button", "text": text, "buttons": buttons}
 
         return self.send_template_message(recipient_id, template_data)
 
     def send_generic_template(
-        self, recipient_id: str, elements: List[Dict]
-    ) -> Tuple[bool, Dict]:
+        self, recipient_id: str, elements: list[dict],
+    ) -> tuple[bool, dict]:
         """Send a generic template (carousel) message."""
         template_data = {"template_type": "generic", "elements": elements}
 
@@ -177,10 +176,10 @@ class FacebookGraphAPI:
     def send_list_template(
         self,
         recipient_id: str,
-        elements: List[Dict],
+        elements: list[dict],
         top_element_style: str = "compact",
-        buttons: List[Dict] = None,
-    ) -> Tuple[bool, Dict]:
+        buttons: list[dict] | None = None,
+    ) -> tuple[bool, dict]:
         """Send a list template message."""
         template_data = {
             "template_type": "list",
@@ -197,34 +196,34 @@ class FacebookGraphAPI:
         self,
         user_id: str,
         fields: str = "first_name,last_name,profile_pic,locale,timezone,gender",
-    ) -> Tuple[bool, Dict]:
+    ) -> tuple[bool, dict]:
         """Get user profile information."""
         return self._make_request("GET", user_id, {"fields": fields})
 
-    def set_messenger_profile(self, profile_data: Dict) -> Tuple[bool, Dict]:
+    def set_messenger_profile(self, profile_data: dict) -> tuple[bool, dict]:
         """Set Messenger profile (persistent menu, greeting, etc.)."""
         return self._make_request("POST", "me/messenger_profile", profile_data)
 
-    def get_messenger_profile(self, fields: str = None) -> Tuple[bool, Dict]:
+    def get_messenger_profile(self, fields: str | None = None) -> tuple[bool, dict]:
         """Get current Messenger profile settings."""
         params = {}
         if fields:
             params["fields"] = fields
         return self._make_request("GET", "me/messenger_profile", params)
 
-    def delete_messenger_profile(self, fields: List[str]) -> Tuple[bool, Dict]:
+    def delete_messenger_profile(self, fields: list[str]) -> tuple[bool, dict]:
         """Delete specific Messenger profile fields."""
         data = {"fields": fields}
         return self._make_request("DELETE", "me/messenger_profile", data)
 
-    def set_get_started_button(self, payload: str = "GET_STARTED") -> Tuple[bool, Dict]:
+    def set_get_started_button(self, payload: str = "GET_STARTED") -> tuple[bool, dict]:
         """Set the Get Started button."""
         data = {"get_started": {"payload": payload}}
         return self.set_messenger_profile(data)
 
     def set_persistent_menu(
-        self, menu_items: List[Dict], composer_input_disabled: bool = False
-    ) -> Tuple[bool, Dict]:
+        self, menu_items: list[dict], composer_input_disabled: bool = False,
+    ) -> tuple[bool, dict]:
         """Set persistent menu."""
         data = {
             "persistent_menu": [
@@ -232,29 +231,29 @@ class FacebookGraphAPI:
                     "locale": "default",
                     "composer_input_disabled": composer_input_disabled,
                     "call_to_actions": menu_items,
-                }
-            ]
+                },
+            ],
         }
         return self.set_messenger_profile(data)
 
-    def set_greeting_text(self, greeting: str) -> Tuple[bool, Dict]:
+    def set_greeting_text(self, greeting: str) -> tuple[bool, dict]:
         """Set greeting text."""
         data = {"greeting": [{"locale": "default", "text": greeting}]}
         return self.set_messenger_profile(data)
 
-    def set_ice_breakers(self, ice_breakers: List[Dict]) -> Tuple[bool, Dict]:
+    def set_ice_breakers(self, ice_breakers: list[dict]) -> tuple[bool, dict]:
         """Set ice breaker questions."""
         data = {"ice_breakers": ice_breakers}
         return self.set_messenger_profile(data)
 
-    def whitelist_domains(self, domains: List[str]) -> Tuple[bool, Dict]:
+    def whitelist_domains(self, domains: list[str]) -> tuple[bool, dict]:
         """Whitelist domains for webview."""
         data = {"whitelisted_domains": domains}
         return self.set_messenger_profile(data)
 
     def pass_thread_control(
-        self, recipient_id: str, target_app_id: str, metadata: str = None
-    ) -> Tuple[bool, Dict]:
+        self, recipient_id: str, target_app_id: str, metadata: str | None = None,
+    ) -> tuple[bool, dict]:
         """Pass thread control to another app (handover protocol)."""
         data = {"recipient": {"id": recipient_id}, "target_app_id": target_app_id}
 
@@ -264,8 +263,8 @@ class FacebookGraphAPI:
         return self._make_request("POST", "me/pass_thread_control", data)
 
     def take_thread_control(
-        self, recipient_id: str, metadata: str = None
-    ) -> Tuple[bool, Dict]:
+        self, recipient_id: str, metadata: str | None = None,
+    ) -> tuple[bool, dict]:
         """Take thread control from another app."""
         data = {"recipient": {"id": recipient_id}}
 
@@ -275,8 +274,8 @@ class FacebookGraphAPI:
         return self._make_request("POST", "me/take_thread_control", data)
 
     def request_thread_control(
-        self, recipient_id: str, metadata: str = None
-    ) -> Tuple[bool, Dict]:
+        self, recipient_id: str, metadata: str | None = None,
+    ) -> tuple[bool, dict]:
         """Request thread control from primary receiver."""
         data = {"recipient": {"id": recipient_id}}
 
@@ -285,21 +284,21 @@ class FacebookGraphAPI:
 
         return self._make_request("POST", "me/request_thread_control", data)
 
-    def get_secondary_receivers(self) -> Tuple[bool, Dict]:
+    def get_secondary_receivers(self) -> tuple[bool, dict]:
         """Get list of secondary receivers for handover protocol."""
         return self._make_request("GET", "me/secondary_receivers")
 
-    def mark_seen(self, recipient_id: str) -> Tuple[bool, Dict]:
+    def mark_seen(self, recipient_id: str) -> tuple[bool, dict]:
         """Mark message as seen (typing indicator off)."""
         data = {"recipient": {"id": recipient_id}, "sender_action": "mark_seen"}
         return self._make_request("POST", "me/messages", data)
 
-    def typing_on(self, recipient_id: str) -> Tuple[bool, Dict]:
+    def typing_on(self, recipient_id: str) -> tuple[bool, dict]:
         """Turn typing indicator on."""
         data = {"recipient": {"id": recipient_id}, "sender_action": "typing_on"}
         return self._make_request("POST", "me/messages", data)
 
-    def typing_off(self, recipient_id: str) -> Tuple[bool, Dict]:
+    def typing_off(self, recipient_id: str) -> tuple[bool, dict]:
         """Turn typing indicator off."""
         data = {"recipient": {"id": recipient_id}, "sender_action": "typing_off"}
         return self._make_request("POST", "me/messages", data)
@@ -316,14 +315,13 @@ class FacebookMessengerService:
         self,
         recipient_psid: str,
         message_type: str = "text",
-        content: str = None,
-        template_data: Dict = None,
-        attachment_url: str = None,
-        attachment_type: str = None,
-        quick_replies: List[Dict] = None,
+        content: str | None = None,
+        template_data: dict | None = None,
+        attachment_url: str | None = None,
+        attachment_type: str | None = None,
+        quick_replies: list[dict] | None = None,
     ) -> FacebookMessage:
         """Send a message and create a FacebookMessage record."""
-
         # Get or create user
         facebook_user, created = FacebookUser.objects.get_or_create(
             psid=recipient_psid,
@@ -381,14 +379,13 @@ class FacebookMessengerService:
         self,
         recipient_psid: str,
         message_type: str,
-        content: str = None,
-        template_data: Dict = None,
-        attachment_url: str = None,
-        attachment_type: str = None,
-        quick_replies: List[Dict] = None,
-    ) -> Tuple[bool, Dict]:
+        content: str | None = None,
+        template_data: dict | None = None,
+        attachment_url: str | None = None,
+        attachment_type: str | None = None,
+        quick_replies: list[dict] | None = None,
+    ) -> tuple[bool, dict]:
         """Send message to Facebook API based on type."""
-
         if message_type == "text":
             return self.api.send_text_message(recipient_psid, content, quick_replies)
 
@@ -397,14 +394,14 @@ class FacebookMessengerService:
 
         elif message_type in ["image", "video", "audio", "file"]:
             return self.api.send_attachment(
-                recipient_psid, message_type, attachment_url
+                recipient_psid, message_type, attachment_url,
             )
 
         else:
             return False, {"error": f"Unsupported message type: {message_type}"}
 
     def send_text(
-        self, recipient_psid: str, text: str, quick_replies: List[Dict] = None
+        self, recipient_psid: str, text: str, quick_replies: list[dict] | None = None,
     ) -> FacebookMessage:
         """Send a text message."""
         return self.send_message(
@@ -451,7 +448,7 @@ class FacebookMessengerService:
         )
 
     def send_button_template(
-        self, recipient_psid: str, text: str, buttons: List[Dict]
+        self, recipient_psid: str, text: str, buttons: list[dict],
     ) -> FacebookMessage:
         """Send a button template."""
         template_data = {"template_type": "button", "text": text, "buttons": buttons}
@@ -463,7 +460,7 @@ class FacebookMessengerService:
         )
 
     def send_generic_template(
-        self, recipient_psid: str, elements: List[Dict]
+        self, recipient_psid: str, elements: list[dict],
     ) -> FacebookMessage:
         """Send a generic template (carousel)."""
         template_data = {"template_type": "generic", "elements": elements}
@@ -475,16 +472,15 @@ class FacebookMessengerService:
         )
 
     def send_quick_reply(
-        self, recipient_psid: str, text: str, quick_replies: List[Dict]
+        self, recipient_psid: str, text: str, quick_replies: list[dict],
     ) -> FacebookMessage:
         """Send a message with quick replies."""
         return self.send_text(recipient_psid, text, quick_replies)
 
     def send_template_message(
-        self, recipient_psid: str, template: FacebookTemplate, variables: Dict = None
+        self, recipient_psid: str, template: FacebookTemplate, variables: dict | None = None,
     ) -> FacebookMessage:
         """Send a message using a saved template."""
-
         # Process template variables
         template_data = template.template_data.copy()
         if variables and template.variables:
@@ -499,7 +495,7 @@ class FacebookMessengerService:
             template_data=template_data,
         )
 
-    def _process_template_variables(self, template_data: Dict, variables: Dict) -> Dict:
+    def _process_template_variables(self, template_data: dict, variables: dict) -> dict:
         """Process template variables in template data."""
         # Convert to JSON string, replace variables, then parse back
         template_str = json.dumps(template_data)
@@ -551,19 +547,19 @@ class FacebookMessengerService:
         """Mark a message as delivered."""
         try:
             message = FacebookMessage.objects.get(
-                facebook_message_id=facebook_message_id
+                facebook_message_id=facebook_message_id,
             )
             message.mark_as_delivered()
         except FacebookMessage.DoesNotExist:
             logger.warning(
-                f"Message not found for delivery update: {facebook_message_id}"
+                f"Message not found for delivery update: {facebook_message_id}",
             )
 
     def mark_message_read(self, facebook_message_id: str):
         """Mark a message as read."""
         try:
             message = FacebookMessage.objects.get(
-                facebook_message_id=facebook_message_id
+                facebook_message_id=facebook_message_id,
             )
             message.mark_as_read()
         except FacebookMessage.DoesNotExist:
@@ -576,12 +572,12 @@ class FacebookMessengerService:
         else:
             self.api.typing_off(recipient_psid)
 
-    def configure_page_settings(self, configuration_data: Dict) -> bool:
+    def configure_page_settings(self, configuration_data: dict) -> bool:
         """Configure page Messenger profile settings."""
         from ..models import FacebookPageConfiguration
 
         config, created = FacebookPageConfiguration.objects.get_or_create(
-            page=self.page, defaults=configuration_data
+            page=self.page, defaults=configuration_data,
         )
 
         if not created:
@@ -622,7 +618,7 @@ class FacebookMessengerService:
 
         return success
 
-    def test_connection(self) -> Tuple[bool, str]:
+    def test_connection(self) -> tuple[bool, str]:
         """Test connection to Facebook API."""
         try:
             success, response = self.api.get_messenger_profile()
@@ -678,7 +674,7 @@ class FacebookRateLimiter:
 # Helper functions for creating common message components
 
 
-def create_quick_reply(title: str, payload: str, image_url: str = None) -> Dict:
+def create_quick_reply(title: str, payload: str, image_url: str | None = None) -> dict:
     """Create a quick reply button."""
     quick_reply = {"content_type": "text", "title": title, "payload": payload}
 
@@ -688,12 +684,12 @@ def create_quick_reply(title: str, payload: str, image_url: str = None) -> Dict:
     return quick_reply
 
 
-def create_postback_button(title: str, payload: str) -> Dict:
+def create_postback_button(title: str, payload: str) -> dict:
     """Create a postback button."""
     return {"type": "postback", "title": title, "payload": payload}
 
 
-def create_url_button(title: str, url: str, webview_height_ratio: str = "tall") -> Dict:
+def create_url_button(title: str, url: str, webview_height_ratio: str = "tall") -> dict:
     """Create a URL button."""
     return {
         "type": "web_url",
@@ -703,18 +699,18 @@ def create_url_button(title: str, url: str, webview_height_ratio: str = "tall") 
     }
 
 
-def create_call_button(title: str, phone_number: str) -> Dict:
+def create_call_button(title: str, phone_number: str) -> dict:
     """Create a call button."""
     return {"type": "phone_number", "title": title, "payload": phone_number}
 
 
 def create_generic_element(
     title: str,
-    subtitle: str = None,
-    image_url: str = None,
-    default_action: Dict = None,
-    buttons: List[Dict] = None,
-) -> Dict:
+    subtitle: str | None = None,
+    image_url: str | None = None,
+    default_action: dict | None = None,
+    buttons: list[dict] | None = None,
+) -> dict:
     """Create a generic template element."""
     element = {"title": title}
 
@@ -731,8 +727,8 @@ def create_generic_element(
 
 
 def create_list_element(
-    title: str, subtitle: str = None, image_url: str = None, default_action: Dict = None
-) -> Dict:
+    title: str, subtitle: str | None = None, image_url: str | None = None, default_action: dict | None = None,
+) -> dict:
     """Create a list template element."""
     element = {"title": title}
 

@@ -11,23 +11,26 @@ logger = ContextLogger(__name__)
 
 @with_request_id
 def poll_and_process_account(account_id: int, _request_id=None):
-    """
-    Polls a specific email account for new messages and processes them.
+    """Polls a specific email account for new messages and processes them.
 
     This function contains the core business logic for polling an email account,
     handling various outcomes like success, authentication failure, or other errors.
 
     Args:
+    ----
         account_id: The ID of the EmailAccount to poll.
 
     Returns:
+    -------
         A dictionary summarizing the polling result.
 
     Raises:
+    ------
         EmailAccount.DoesNotExist: If the account cannot be found or is not active.
         ConnectionError: If a transient connection issue occurs.
         PollingError: For non-transient polling errors.
         TypeError: If the resolved adapter is not an inbound adapter.
+
     """
     try:
         # Set context for all subsequent log calls
@@ -49,14 +52,14 @@ def poll_and_process_account(account_id: int, _request_id=None):
         adapter = get_adapter(account.inbound_channel, account)
         if not isinstance(adapter, BaseInboundAdapter):
             raise TypeError(
-                f"Adapter for {account.inbound_channel} is not an inbound adapter."
+                f"Adapter for {account.inbound_channel} is not an inbound adapter.",
             )
 
         poll_log = adapter.poll()
 
         logger.info(
             f"Email polling completed for {account.email_address}: "
-            f"{poll_log.messages_processed} messages processed"
+            f"{poll_log.messages_processed} messages processed",
         )
 
         return {
@@ -69,13 +72,14 @@ def poll_and_process_account(account_id: int, _request_id=None):
     except ConnectionError:
         # Re-raise connection errors so the Celery task can retry.
         logger.warning(
-            f"Connection error for email account {account_id}. Task will be retried."
+            f"Connection error for email account {account_id}. Task will be retried.",
         )
         raise
 
     except AuthenticationError as e:
         logger.error(
-            f"Authentication failed for email account {account_id}. Disabling account. Error: {e}"
+            f"Authentication failed for email account {account_id}. "
+            f"Disabling account. Error: {e}",
         )
         account.status = AccountStatus.INACTIVE
         account.last_error_message = (
@@ -86,7 +90,7 @@ def poll_and_process_account(account_id: int, _request_id=None):
 
     except (PollingError, TypeError) as e:
         logger.error(
-            f"A non-transient error occurred while polling account {account_id}: {e}"
+            f"A non-transient error occurred while polling account {account_id}: {e}",
         )
         account.last_error_message = f"A non-transient polling error occurred: {e}"
         account.save(update_fields=["last_error_message"])
@@ -94,7 +98,7 @@ def poll_and_process_account(account_id: int, _request_id=None):
 
     except Exception as e:
         logger.exception(
-            f"An unexpected error occurred polling email account {account_id}: {e}"
+            f"An unexpected error occurred polling email account {account_id}: {e}",
         )
         account.last_error_message = f"An unexpected error occurred during polling: {e}"
         account.save(update_fields=["last_error_message"])

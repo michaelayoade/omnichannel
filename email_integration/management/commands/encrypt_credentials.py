@@ -1,5 +1,4 @@
-"""
-Management command to migrate plaintext credentials to encrypted format.
+"""Management command to migrate plaintext credentials to encrypted format.
 
 This command handles the secure migration of existing plaintext credentials
 to the new encrypted format, maintaining data integrity and security.
@@ -20,8 +19,7 @@ logger = ContextLogger(__name__)
 
 
 class Command(BaseCommand):
-    """
-    Django management command to encrypt plaintext credentials in EmailAccount models.
+    """Django management command to encrypt plaintext credentials in EmailAccount models.
     Safely migrates existing plaintext passwords to the new encrypted format.
     """
 
@@ -51,7 +49,7 @@ class Command(BaseCommand):
         # Check if encryption is configured
         if not get_config("ENCRYPTION_KEY"):
             raise CommandError(
-                "ENCRYPTION_KEY is not configured. Encryption cannot proceed."
+                "ENCRYPTION_KEY is not configured. Encryption cannot proceed.",
             )
 
         batch_size = options["batch_size"]
@@ -60,22 +58,23 @@ class Command(BaseCommand):
 
         if dry_run:
             self.stdout.write(
-                self.style.WARNING("DRY RUN MODE: No changes will be saved")
+                self.style.WARNING("DRY RUN MODE: No changes will be saved"),
             )
 
         # Get accounts that may need migration
-        # Look for accounts with settings containing passwords that don't appear to be encrypted
+        # Look for accounts with settings containing passwords that don't appear to be
+        # encrypted
         accounts = self._get_accounts_for_migration(force)
         total_accounts = accounts.count()
 
         if total_accounts == 0:
             self.stdout.write(
-                self.style.SUCCESS("No accounts found that need credential encryption")
+                self.style.SUCCESS("No accounts found that need credential encryption"),
             )
             return
 
         self.stdout.write(
-            f"Found {total_accounts} accounts that may need credential encryption"
+            f"Found {total_accounts} accounts that may need credential encryption",
         )
 
         # Process in batches to avoid memory issues
@@ -89,7 +88,7 @@ class Command(BaseCommand):
         for i in range(0, total_accounts, batch_size):
             batch = accounts[i : i + batch_size]
             batch_processed, batch_updated, batch_errored = self._process_batch(
-                batch, dry_run
+                batch, dry_run,
             )
 
             processed += batch_processed
@@ -99,7 +98,7 @@ class Command(BaseCommand):
             # Show progress
             percent_complete = (processed / total_accounts) * 100
             self.stdout.write(
-                f"Progress: {percent_complete:.1f}% ({processed}/{total_accounts})"
+                f"Progress: {percent_complete:.1f}% ({processed}/{total_accounts})",
             )
 
         duration = time.time() - start_time
@@ -110,34 +109,39 @@ class Command(BaseCommand):
                 f"Migration completed in {duration:.2f} seconds\n"
                 f"Accounts processed: {processed}\n"
                 f"Accounts updated: {updated}\n"
-                f"Accounts with errors: {errored}"
-            )
+                f"Accounts with errors: {errored}",
+            ),
         )
 
         if dry_run:
             self.stdout.write(
                 self.style.WARNING(
-                    "This was a dry run. To perform actual migration, run without --dry-run flag"
-                )
+                    "This was a dry run. To perform actual migration, run without"
+                    " --dry-run flag",
+                ),
             )
 
     def _get_accounts_for_migration(self, force=False):
-        """
-        Get accounts that need their credentials encrypted.
+        """Get accounts that need their credentials encrypted.
 
         Args:
-            force: Whether to include accounts that might already have encrypted credentials
+        ----
+            force: Whether to include accounts that might already have encrypted
+                credentials
 
         Returns:
+        -------
             QuerySet of EmailAccount objects
+
         """
         # Base query for all accounts with server settings
         query = EmailAccount.objects.exclude(server_settings={}).exclude(
-            server_settings=None
+            server_settings=None,
         )
 
         if not force:
-            # Try to identify accounts with plaintext credentials by looking for common patterns
+            # Try to identify accounts with plaintext credentials by looking for common
+            # patterns
             # This is imperfect but helps avoid unnecessary re-encryption
             plaintext_filter = (
                 (
@@ -145,21 +149,21 @@ class Command(BaseCommand):
                     # (encrypted strings typically start with 'gAAAAA' for Fernet)
                     Q(server_settings__has_key="smtp_password")
                     & ~Q(
-                        server_settings__smtp_password__startswith="gAAAAA"
+                        server_settings__smtp_password__startswith="gAAAAA",
                     )  # nosec B106
                 )
                 | (
                     # Accounts with incoming password that doesn't look encrypted
                     Q(server_settings__has_key="imap_password")
                     & ~Q(
-                        server_settings__imap_password__startswith="gAAAAA"
+                        server_settings__imap_password__startswith="gAAAAA",
                     )  # nosec B106
                 )
                 | (
                     # Accounts with POP3 password that doesn't look encrypted
                     Q(server_settings__has_key="pop3_password")
                     & ~Q(
-                        server_settings__pop3_password__startswith="gAAAAA"
+                        server_settings__pop3_password__startswith="gAAAAA",
                     )  # nosec B106
                 )
             )
@@ -169,15 +173,17 @@ class Command(BaseCommand):
         return query
 
     def _process_batch(self, batch, dry_run=False):
-        """
-        Process a batch of accounts for credential encryption.
+        """Process a batch of accounts for credential encryption.
 
         Args:
+        ----
             batch: Iterable of EmailAccount objects
             dry_run: Whether this is a dry run (no changes saved)
 
         Returns:
+        -------
             Tuple of (processed, updated, errored) counts
+
         """
         processed = 0
         updated = 0
@@ -200,7 +206,7 @@ class Command(BaseCommand):
                         # In dry run, count as updated if changes would have been made
                         updated += 1
                         self.stdout.write(
-                            f"Would encrypt credentials for account {account.id}"
+                            f"Would encrypt credentials for account {account.id}",
                         )
                     else:
                         self.stdout.write(f"No changes needed for account {account.id}")
@@ -208,45 +214,47 @@ class Command(BaseCommand):
             except Exception as e:
                 errored += 1
                 logger.error(
-                    f"Error encrypting credentials for account {account.id}: {str(e)}",
+                    f"Error encrypting credentials for account {account.id}: {e!s}",
                     extra={"account_id": account.id},
                 )
                 self.stdout.write(
-                    self.style.ERROR(f"Error processing account {account.id}: {str(e)}")
+                    self.style.ERROR(f"Error processing account {account.id}: {e!s}"),
                 )
 
         return processed, updated, errored
 
     def _encrypt_account_credentials(self, account):
-        """
-        Encrypt plaintext credentials for an account.
+        """Encrypt plaintext credentials for an account.
 
         Args:
+        ----
             account: The EmailAccount object
 
         Returns:
+        -------
             True if changes were made, False otherwise
+
         """
         settings = account.server_settings.copy() if account.server_settings else {}
         changes_made = False
 
         # SMTP password
         if "smtp_password" in settings and not settings["smtp_password"].startswith(
-            "gAAAAA"
+            "gAAAAA",
         ):
             settings["smtp_password"] = encrypt_value(settings["smtp_password"])
             changes_made = True
 
         # IMAP password
         if "imap_password" in settings and not settings["imap_password"].startswith(
-            "gAAAAA"
+            "gAAAAA",
         ):
             settings["imap_password"] = encrypt_value(settings["imap_password"])
             changes_made = True
 
         # POP3 password
         if "pop3_password" in settings and not settings["pop3_password"].startswith(
-            "gAAAAA"
+            "gAAAAA",
         ):
             settings["pop3_password"] = encrypt_value(settings["pop3_password"])
             changes_made = True
@@ -257,7 +265,7 @@ class Command(BaseCommand):
 
             # Refresh token
             if "refresh_token" in oauth2 and not oauth2["refresh_token"].startswith(
-                "gAAAAA"
+                "gAAAAA",
             ):
                 oauth2["refresh_token"] = encrypt_value(oauth2["refresh_token"])
                 settings["oauth2"] = oauth2
@@ -265,7 +273,7 @@ class Command(BaseCommand):
 
             # Client secret
             if "client_secret" in oauth2 and not oauth2["client_secret"].startswith(
-                "gAAAAA"
+                "gAAAAA",
             ):
                 oauth2["client_secret"] = encrypt_value(oauth2["client_secret"])
                 settings["oauth2"] = oauth2

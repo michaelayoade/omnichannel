@@ -2,8 +2,9 @@
 
 import logging
 import uuid
+from collections.abc import Callable
 from functools import wraps
-from typing import Any, Callable, Dict, Optional, TypeVar, cast
+from typing import Any, TypeVar, cast
 
 # Type variable for decorator pattern
 F = TypeVar("F", bound=Callable[..., Any])
@@ -24,7 +25,7 @@ class ContextLogger:
     def __init__(self, name: str):
         """Initialize with a standard logger name."""
         self.logger = logging.getLogger(name)
-        self.context: Dict[str, Any] = {}
+        self.context: dict[str, Any] = {}
 
     def set_context(self, **kwargs) -> None:
         """Set persistent context data for all subsequent log calls."""
@@ -44,8 +45,8 @@ class ContextLogger:
         level: int,
         msg: str,
         *args,
-        extra_context: Optional[Dict[str, Any]] = None,
-        **kwargs
+        extra_context: dict[str, Any] | None = None,
+        **kwargs,
     ) -> None:
         """Internal method to enrich logs with context."""
         # Combine base context with any call-specific extra context
@@ -59,31 +60,31 @@ class ContextLogger:
         self.logger.log(level, msg, *args, **kwargs)
 
     def debug(
-        self, msg: str, *args, extra_context: Optional[Dict[str, Any]] = None, **kwargs
+        self, msg: str, *args, extra_context: dict[str, Any] | None = None, **kwargs,
     ) -> None:
         """Log a debug message with context."""
         self._log(logging.DEBUG, msg, *args, extra_context=extra_context, **kwargs)
 
     def info(
-        self, msg: str, *args, extra_context: Optional[Dict[str, Any]] = None, **kwargs
+        self, msg: str, *args, extra_context: dict[str, Any] | None = None, **kwargs,
     ) -> None:
         """Log an info message with context."""
         self._log(logging.INFO, msg, *args, extra_context=extra_context, **kwargs)
 
     def warning(
-        self, msg: str, *args, extra_context: Optional[Dict[str, Any]] = None, **kwargs
+        self, msg: str, *args, extra_context: dict[str, Any] | None = None, **kwargs,
     ) -> None:
         """Log a warning message with context."""
         self._log(logging.WARNING, msg, *args, extra_context=extra_context, **kwargs)
 
     def error(
-        self, msg: str, *args, extra_context: Optional[Dict[str, Any]] = None, **kwargs
+        self, msg: str, *args, extra_context: dict[str, Any] | None = None, **kwargs,
     ) -> None:
         """Log an error message with context."""
         self._log(logging.ERROR, msg, *args, extra_context=extra_context, **kwargs)
 
     def exception(
-        self, msg: str, *args, extra_context: Optional[Dict[str, Any]] = None, **kwargs
+        self, msg: str, *args, extra_context: dict[str, Any] | None = None, **kwargs,
     ) -> None:
         """Log an exception message with context."""
         self._log(
@@ -92,11 +93,11 @@ class ContextLogger:
             *args,
             extra_context=extra_context,
             exc_info=True,
-            **kwargs
+            **kwargs,
         )
 
     def critical(
-        self, msg: str, *args, extra_context: Optional[Dict[str, Any]] = None, **kwargs
+        self, msg: str, *args, extra_context: dict[str, Any] | None = None, **kwargs,
     ) -> None:
         """Log a critical message with context."""
         self._log(logging.CRITICAL, msg, *args, extra_context=extra_context, **kwargs)

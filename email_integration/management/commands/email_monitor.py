@@ -4,8 +4,10 @@ from datetime import timedelta
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 
+from email_integration import models
 from email_integration.models import (
     EmailAccount,
+    EmailContact,
     EmailMessage,
     EmailPollLog,
     EmailThread,
@@ -17,11 +19,11 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument(
-            "--account-id", type=int, help="Specific email account to monitor"
+            "--account-id", type=int, help="Specific email account to monitor",
         )
 
         parser.add_argument(
-            "--email-address", type=str, help="Email address of account to monitor"
+            "--email-address", type=str, help="Email address of account to monitor",
         )
 
         parser.add_argument(
@@ -40,7 +42,7 @@ class Command(BaseCommand):
         )
 
         parser.add_argument(
-            "--show-errors", action="store_true", help="Show detailed error information"
+            "--show-errors", action="store_true", help="Show detailed error information",
         )
 
     def handle(self, *args, **options):
@@ -53,7 +55,7 @@ class Command(BaseCommand):
                     account = EmailAccount.objects.get(id=options["account_id"])
                 else:
                     account = EmailAccount.objects.get(
-                        email_address=options["email_address"]
+                        email_address=options["email_address"],
                     )
                 accounts = [account]
             except EmailAccount.DoesNotExist:
@@ -71,8 +73,8 @@ class Command(BaseCommand):
         """Output monitoring data in table format."""
         self.stdout.write(
             self.style.SUCCESS(
-                f'\nEmail Integration Monitor - Last {self.options["hours"]} hours'
-            )
+                f'\nEmail Integration Monitor - Last {self.options["hours"]} hours',
+            ),
         )
         self.stdout.write("=" * 80)
 
@@ -131,7 +133,7 @@ class Command(BaseCommand):
         if account.last_poll_at:
             time_since_poll = timezone.now() - account.last_poll_at
             self.stdout.write(
-                f"   Last Poll: {self._format_duration(time_since_poll)} ago"
+                f"   Last Poll: {self._format_duration(time_since_poll)} ago",
             )
         else:
             self.stdout.write("   Last Poll: Never")
@@ -139,8 +141,8 @@ class Command(BaseCommand):
         if account.last_error_message:
             self.stdout.write(
                 self.style.WARNING(
-                    f"   ⚠️  Last Error: {account.last_error_message[:100]}..."
-                )
+                    f"   ⚠️  Last Error: {account.last_error_message[:100]}...",
+                ),
             )
 
     def _show_message_stats(self, account):
@@ -150,14 +152,14 @@ class Command(BaseCommand):
         self.stdout.write(f'\n📨 Messages (last {self.options["hours"]}h):')
         self.stdout.write(f'   Total: {stats["total"]}')
         self.stdout.write(
-            f'   Inbound: {stats["inbound"]} | Outbound: {stats["outbound"]}'
+            f'   Inbound: {stats["inbound"]} | Outbound: {stats["outbound"]}',
         )
         self.stdout.write(f'   Sent: {stats["sent"]} | Failed: {stats["failed"]}')
         self.stdout.write(f'   With Attachments: {stats["with_attachments"]}')
 
         if stats["failed"] > 0:
             self.stdout.write(
-                self.style.WARNING(f'   ⚠️  {stats["failed"]} failed messages')
+                self.style.WARNING(f'   ⚠️  {stats["failed"]} failed messages'),
             )
 
     def _show_polling_stats(self, account):
@@ -167,14 +169,14 @@ class Command(BaseCommand):
         self.stdout.write(f'\n🔄 Polling (last {self.options["hours"]}h):')
         self.stdout.write(f'   Total Polls: {stats["total_polls"]}')
         self.stdout.write(
-            f'   Successful: {stats["successful"]} | Failed: {stats["failed"]}'
+            f'   Successful: {stats["successful"]} | Failed: {stats["failed"]}',
         )
         self.stdout.write(f'   Messages Found: {stats["messages_found"]}')
         self.stdout.write(f'   Processing Rate: {stats["processing_rate"]:.1f}%')
 
         if stats["failed"] > 0:
             self.stdout.write(
-                self.style.WARNING(f'   ⚠️  {stats["failed"]} failed polls')
+                self.style.WARNING(f'   ⚠️  {stats["failed"]} failed polls'),
             )
 
     def _show_contact_stats(self, account):
@@ -203,13 +205,13 @@ class Command(BaseCommand):
             self.stdout.write("\n❌ Recent Errors:")
             for error in errors["recent_errors"][:5]:  # Show last 5 errors
                 self.stdout.write(
-                    f'   • {error["timestamp"]}: {error["message"][:100]}...'
+                    f'   • {error["timestamp"]}: {error["message"][:100]}...',
                 )
 
     def _get_message_stats(self, account):
         """Get message statistics for an account."""
         messages = EmailMessage.objects.filter(
-            account=account, received_at__gte=self.time_window
+            account=account, received_at__gte=self.time_window,
         )
 
         total = messages.count()
@@ -231,7 +233,7 @@ class Command(BaseCommand):
     def _get_polling_stats(self, account):
         """Get polling statistics for an account."""
         polls = EmailPollLog.objects.filter(
-            account=account, started_at__gte=self.time_window
+            account=account, started_at__gte=self.time_window,
         )
 
         total_polls = polls.count()
@@ -259,7 +261,6 @@ class Command(BaseCommand):
 
     def _get_contact_stats(self, account):
         """Get contact statistics for an account."""
-
         all_contacts = EmailContact.objects.filter(account=account)
         new_contacts = all_contacts.filter(created_at__gte=self.time_window)
         active_contacts = all_contacts.filter(last_email_at__gte=self.time_window)
@@ -285,11 +286,11 @@ class Command(BaseCommand):
     def _get_error_info(self, account):
         """Get error information for an account."""
         recent_polls = EmailPollLog.objects.filter(
-            account=account, status="error", started_at__gte=self.time_window
+            account=account, status="error", started_at__gte=self.time_window,
         ).order_by("-started_at")
 
         recent_messages = EmailMessage.objects.filter(
-            account=account, status="failed", failed_at__gte=self.time_window
+            account=account, status="failed", failed_at__gte=self.time_window,
         ).order_by("-failed_at")
 
         errors = []
@@ -301,7 +302,7 @@ class Command(BaseCommand):
                     "type": "polling",
                     "timestamp": poll.started_at.isoformat(),
                     "message": poll.error_message,
-                }
+                },
             )
 
         # Add message errors
@@ -311,7 +312,7 @@ class Command(BaseCommand):
                     "type": "message",
                     "timestamp": message.failed_at.isoformat(),
                     "message": message.error_message,
-                }
+                },
             )
 
         # Sort by timestamp

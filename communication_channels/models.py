@@ -24,7 +24,7 @@ class CommunicationChannel(models.Model):
     name = models.CharField(max_length=100)
     channel_type = models.CharField(max_length=20, choices=CHANNEL_TYPE_CHOICES)
     status = models.CharField(
-        max_length=20, choices=CHANNEL_STATUS_CHOICES, default="active"
+        max_length=20, choices=CHANNEL_STATUS_CHOICES, default="active",
     )
     configuration = models.JSONField(default=dict, blank=True)
     webhook_url = models.URLField(blank=True)
@@ -52,7 +52,7 @@ class ChannelIntegration(models.Model):
     ]
 
     channel = models.OneToOneField(
-        CommunicationChannel, on_delete=models.CASCADE, related_name="integration"
+        CommunicationChannel, on_delete=models.CASCADE, related_name="integration",
     )
     integration_type = models.CharField(max_length=100)
     external_id = models.CharField(max_length=200, blank=True)
@@ -60,7 +60,7 @@ class ChannelIntegration(models.Model):
     refresh_token = models.TextField(blank=True)
     expires_at = models.DateTimeField(null=True, blank=True)
     status = models.CharField(
-        max_length=20, choices=INTEGRATION_STATUS_CHOICES, default="pending"
+        max_length=20, choices=INTEGRATION_STATUS_CHOICES, default="pending",
     )
     last_sync_at = models.DateTimeField(null=True, blank=True)
     error_message = models.TextField(blank=True)
@@ -77,7 +77,7 @@ class ChannelIntegration(models.Model):
 
 class ChannelContact(models.Model):
     channel = models.ForeignKey(
-        CommunicationChannel, on_delete=models.CASCADE, related_name="contacts"
+        CommunicationChannel, on_delete=models.CASCADE, related_name="contacts",
     )
     external_contact_id = models.CharField(max_length=200)
     contact_identifier = models.CharField(max_length=200)
@@ -88,7 +88,7 @@ class ChannelContact(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     content_type = models.ForeignKey(
-        ContentType, on_delete=models.CASCADE, null=True, blank=True
+        ContentType, on_delete=models.CASCADE, null=True, blank=True,
     )
     object_id = models.PositiveIntegerField(null=True, blank=True)
     linked_customer = GenericForeignKey("content_type", "object_id")

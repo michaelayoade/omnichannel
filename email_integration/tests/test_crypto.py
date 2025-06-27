@@ -1,5 +1,4 @@
-"""
-Tests for the encryption utilities.
+"""Tests for the encryption utilities.
 
 This module tests the field-level encryption and decryption functionality,
 ensuring sensitive data is properly protected.
@@ -7,6 +6,7 @@ ensuring sensitive data is properly protected.
 
 from unittest import mock
 
+import pytest
 from django.test import TestCase
 
 from ..utils.crypto import decrypt_value, derive_key, encrypt_value, get_encryption_key
@@ -34,14 +34,14 @@ class CryptoUtilsTestCase(TestCase):
         key2 = derive_key(self.test_key, self.test_salt)
 
         # Same inputs should produce same key
-        self.assertEqual(key1, key2)
+        assert key1 == key2
 
         # Different salt should produce different key
         different_key = derive_key(self.test_key, b"different-salt")
-        self.assertNotEqual(key1, different_key)
+        assert key1 != different_key
 
         # Key should be 32 bytes (for Fernet)
-        self.assertEqual(len(key1), 32)
+        assert len(key1) == 32
 
     def test_encryption_decryption(self):
         """Test that encryption and decryption work correctly."""
@@ -57,39 +57,39 @@ class CryptoUtilsTestCase(TestCase):
             encrypted = encrypt_value(value)
 
             # Encrypted value should be different from original
-            self.assertNotEqual(value, encrypted)
+            assert value != encrypted
 
             # Encrypted value should start with Fernet prefix
-            self.assertTrue(encrypted.startswith("gAAAAA"))
+            assert encrypted.startswith("gAAAAA")
 
             # Decryption should recover original value
             decrypted = decrypt_value(encrypted)
-            self.assertEqual(value, decrypted)
+            assert value == decrypted
 
     def test_get_encryption_key(self):
         """Test retrieval of encryption key."""
         # Test with mocked config
         key = get_encryption_key()
-        self.assertEqual(key, self.test_key)
+        assert key == self.test_key
 
         # Test fallback for development
         with mock.patch("email_integration.utils.crypto.settings") as mock_settings:
             mock_settings.DEBUG = True
             self.mock_get_config.return_value = None
             key = get_encryption_key()
-            self.assertIsNotNone(key)
+            assert key is not None
 
         # Test error in production mode
         with mock.patch("email_integration.utils.crypto.settings") as mock_settings:
             mock_settings.DEBUG = False
             self.mock_get_config.return_value = None
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 get_encryption_key()
 
     @mock.patch("email_integration.utils.crypto.logger")
     def test_decryption_failure(self, mock_logger):
         """Test handling of decryption failures."""
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             decrypt_value("not-a-valid-encrypted-value")
 
         # Logger should record the error

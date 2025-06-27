@@ -38,7 +38,7 @@ class WhatsAppBusinessAccountAdmin(admin.ModelAdmin):
                     "phone_number_id",
                     "phone_number",
                     "display_phone_number",
-                )
+                ),
             },
         ),
         (
@@ -133,7 +133,7 @@ class WhatsAppMessageAdmin(admin.ModelAdmin):
                     "direction",
                     "message_type",
                     "status",
-                )
+                ),
             },
         ),
         ("Content", {"fields": ("content",)}),
@@ -160,7 +160,7 @@ class WhatsAppMessageAdmin(admin.ModelAdmin):
                     "delivered_at",
                     "read_at",
                     "failed_at",
-                )
+                ),
             },
         ),
         (
@@ -256,7 +256,7 @@ class WhatsAppWebhookEventAdmin(admin.ModelAdmin):
                     "webhook_id",
                     "processing_status",
                     "retry_count",
-                )
+                ),
             },
         ),
         ("Processing", {"fields": ("processed_at", "error_message")}),
@@ -298,7 +298,7 @@ class WhatsAppMediaFileAdmin(admin.ModelAdmin):
                     "filename",
                     "mime_type",
                     "file_size_display",
-                )
+                ),
             },
         ),
         (
@@ -325,7 +325,7 @@ class WhatsAppMediaFileAdmin(admin.ModelAdmin):
     def download_link(self, obj):
         if obj.file_path:
             return format_html(
-                '<a href="{}" target="_blank">Download</a>', obj.file_path.url
+                '<a href="{}" target="_blank">Download</a>', obj.file_path.url,
             )
         return "-"
 

@@ -1,5 +1,4 @@
-"""
-Integration tests for POP3 email adapter.
+"""Integration tests for POP3 email adapter.
 
 These tests verify the behavior of the POP3 adapter using a mock POP3 server
 to simulate the actual email server responses.
@@ -10,6 +9,7 @@ import tempfile
 from datetime import datetime
 from unittest import mock
 
+import pytest
 import responses
 from django.test import TestCase
 
@@ -117,7 +117,7 @@ class POP3AdapterTest(TestCase):
         """Set up testing environment."""
         # Create a test account with POP3 settings
         self.account = EmailAccountFactory(
-            email_address="test@example.com", name="Test User"
+            email_address="test@example.com", name="Test User",
         )
 
         # Add POP3 specific settings
@@ -194,13 +194,13 @@ dGVzdCBwZGYgY29udGVudA==
         self.adapter.connect()
 
         # Verify connection was established
-        self.assertTrue(self.mock_server.connected)
-        self.assertTrue(self.mock_server.authenticated)
+        assert self.mock_server.connected
+        assert self.mock_server.authenticated
 
         # Verify server was called with correct parameters
-        self.assertEqual(self.mock_server.calls[0]["method"], "__call__")
-        self.assertEqual(self.mock_server.calls[0]["args"][0], "pop3.example.com")
-        self.assertEqual(self.mock_server.calls[0]["args"][1], 995)
+        assert self.mock_server.calls[0]["method"] == "__call__"
+        assert self.mock_server.calls[0]["args"][0] == "pop3.example.com"
+        assert self.mock_server.calls[0]["args"][1] == 995
 
     def test_connect_auth_error(self):
         """Test authentication error handling."""
@@ -208,13 +208,11 @@ dGVzdCBwZGYgY29udGVudA==
         self.mock_server.auth_fail = True
 
         # Connect should raise AuthenticationError
-        with self.assertRaises(AuthenticationError):
+        with pytest.raises(AuthenticationError):
             self.adapter.connect()
 
         # Verify proper calls were made despite failure
-        self.assertTrue(
-            any(call["method"] == "user" for call in self.mock_server.calls)
-        )
+        assert any(call["method"] == "user" for call in self.mock_server.calls)
 
     def test_fetch_messages(self):
         """Test fetching messages from POP3 server."""
@@ -225,18 +223,18 @@ dGVzdCBwZGYgY29udGVudA==
         messages = self.adapter.fetch_messages(limit=10)
 
         # Verify results
-        self.assertEqual(len(messages), 2)
-        self.assertEqual(messages[0]["subject"], "Test Email 1")
-        self.assertEqual(messages[0]["from_email"], "sender1@example.com")
-        self.assertEqual(messages[1]["subject"], "Test Email 2")
+        assert len(messages) == 2
+        assert messages[0]["subject"] == "Test Email 1"
+        assert messages[0]["from_email"] == "sender1@example.com"
+        assert messages[1]["subject"] == "Test Email 2"
 
         # Verify message body content was extracted
-        self.assertIn("This is test email 1 content.", messages[0]["body"])
+        assert "This is test email 1 content." in messages[0]["body"]
 
         # Verify attachment was processed in the second message
-        self.assertEqual(len(messages[1]["attachments"]), 1)
-        self.assertEqual(messages[1]["attachments"][0].name, "test.pdf")
-        self.assertEqual(messages[1]["attachments"][0].content_type, "application/pdf")
+        assert len(messages[1]["attachments"]) == 1
+        assert messages[1]["attachments"][0].name == "test.pdf"
+        assert messages[1]["attachments"][0].content_type == "application/pdf"
 
     def test_fetch_and_delete(self):
         """Test fetching and deleting messages."""
@@ -247,17 +245,15 @@ dGVzdCBwZGYgY29udGVudA==
         self.adapter.delete_after_fetch = True
 
         # Fetch messages
-        messages = self.adapter.fetch_messages(limit=10)
+        self.adapter.fetch_messages(limit=10)
 
         # Verify messages were deleted
-        self.assertEqual(len(self.mock_server.deleted_messages), 2)
-        self.assertIn(1, self.mock_server.deleted_messages)
-        self.assertIn(2, self.mock_server.deleted_messages)
+        assert len(self.mock_server.deleted_messages) == 2
+        assert 1 in self.mock_server.deleted_messages
+        assert 2 in self.mock_server.deleted_messages
 
         # Verify quit was called to commit deletions
-        self.assertTrue(
-            any(call["method"] == "quit" for call in self.mock_server.calls)
-        )
+        assert any(call["method"] == "quit" for call in self.mock_server.calls)
 
     def test_fetch_with_leave_on_server(self):
         """Test fetching messages with leave_messages_on_server option."""
@@ -270,10 +266,10 @@ dGVzdCBwZGYgY29udGVudA==
 
         # Connect and fetch
         self.adapter.connect()
-        messages = self.adapter.fetch_messages(limit=10)
+        self.adapter.fetch_messages(limit=10)
 
         # Verify messages were not deleted
-        self.assertEqual(len(self.mock_server.deleted_messages), 0)
+        assert len(self.mock_server.deleted_messages) == 0
 
     def test_connection_error(self):
         """Test connection error handling."""
@@ -281,7 +277,7 @@ dGVzdCBwZGYgY29udGVudA==
         self.mock_server.should_fail = True
 
         # Connect should raise ConnectionError
-        with self.assertRaises(ConnectionError):
+        with pytest.raises(ConnectionError):
             self.adapter.connect()
 
 
@@ -342,7 +338,7 @@ dGVzdCBwZGYgY29udGVudA==
         self.pop3_ssl_patcher.stop()
 
         # Clean up temporary files
-        for root, dirs, files in os.walk(self.temp_dir):
+        for root, _dirs, files in os.walk(self.temp_dir):
             for file in files:
                 os.unlink(os.path.join(root, file))
         os.rmdir(self.temp_dir)
@@ -354,19 +350,19 @@ dGVzdCBwZGYgY29udGVudA==
         messages = self.adapter.fetch_messages()
 
         # Verify we got one message with one attachment
-        self.assertEqual(len(messages), 1)
-        self.assertEqual(len(messages[0]["attachments"]), 1)
+        assert len(messages) == 1
+        assert len(messages[0]["attachments"]) == 1
 
         attachment = messages[0]["attachments"][0]
 
         # Verify attachment metadata
-        self.assertEqual(attachment.name, "test.pdf")
-        self.assertEqual(attachment.content_type, "application/pdf")
+        assert attachment.name == "test.pdf"
+        assert attachment.content_type == "application/pdf"
 
         # Verify file content was saved
-        self.assertIsNotNone(attachment.file)
+        assert attachment.file is not None
 
         # Read content and verify
         attachment.file.seek(0)
         content = attachment.file.read()
-        self.assertEqual(content, b"test pdf content")
+        assert content == b"test pdf content"

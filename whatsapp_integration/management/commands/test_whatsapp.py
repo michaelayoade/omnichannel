@@ -22,7 +22,7 @@ class Command(BaseCommand):
         )
 
         parser.add_argument(
-            "--to", type=str, help="Phone number to send test message to"
+            "--to", type=str, help="Phone number to send test message to",
         )
 
         parser.add_argument(
@@ -40,7 +40,7 @@ class Command(BaseCommand):
         )
 
         parser.add_argument(
-            "--template-name", type=str, help="Template name for template test"
+            "--template-name", type=str, help="Template name for template test",
         )
 
         parser.add_argument(
@@ -54,11 +54,11 @@ class Command(BaseCommand):
         try:
             # Get business account
             business_account = WhatsAppBusinessAccount.objects.get(
-                business_account_id=options["business_account_id"], is_active=True
+                business_account_id=options["business_account_id"], is_active=True,
             )
 
             self.stdout.write(
-                self.style.SUCCESS(f"Found business account: {business_account.name}")
+                self.style.SUCCESS(f"Found business account: {business_account.name}"),
             )
 
             # Initialize service
@@ -78,10 +78,10 @@ class Command(BaseCommand):
 
         except WhatsAppBusinessAccount.DoesNotExist:
             raise CommandError(
-                f'Business account {options["business_account_id"]} not found'
+                f'Business account {options["business_account_id"]} not found',
             )
         except Exception as e:
-            raise CommandError(f"Test failed: {str(e)}")
+            raise CommandError(f"Test failed: {e!s}")
 
     def _test_connectivity(self, message_service):
         """Test basic API connectivity."""
@@ -94,7 +94,7 @@ class Command(BaseCommand):
 
         except WhatsAppAPIError as e:
             self.stdout.write(
-                self.style.ERROR(f"✗ API connectivity failed: {e.message}")
+                self.style.ERROR(f"✗ API connectivity failed: {e.message}"),
             )
             if e.error_code:
                 self.stdout.write(f"Error code: {e.error_code}")
@@ -115,7 +115,7 @@ class Command(BaseCommand):
 
         try:
             message = message_service.send_message(
-                to=formatted_phone, message_type="text", content=options["message"]
+                to=formatted_phone, message_type="text", content=options["message"],
             )
 
             self.stdout.write(self.style.SUCCESS("✓ Text message sent successfully"))
@@ -124,7 +124,7 @@ class Command(BaseCommand):
 
         except WhatsAppAPIError as e:
             self.stdout.write(
-                self.style.ERROR(f"✗ Failed to send text message: {e.message}")
+                self.style.ERROR(f"✗ Failed to send text message: {e.message}"),
             )
             if e.error_code:
                 self.stdout.write(f"Error code: {e.error_code}")
@@ -136,7 +136,7 @@ class Command(BaseCommand):
 
         if not options["template_name"]:
             raise CommandError(
-                "Template name (--template-name) is required for template test"
+                "Template name (--template-name) is required for template test",
             )
 
         self.stdout.write(f'Testing template message to {options["to"]}...')
@@ -154,14 +154,14 @@ class Command(BaseCommand):
             )
 
             self.stdout.write(
-                self.style.SUCCESS("✓ Template message sent successfully")
+                self.style.SUCCESS("✓ Template message sent successfully"),
             )
             self.stdout.write(f"Message ID: {message.wa_message_id}")
             self.stdout.write(f'Template: {options["template_name"]}')
 
         except WhatsAppAPIError as e:
             self.stdout.write(
-                self.style.ERROR(f"✗ Failed to send template message: {e.message}")
+                self.style.ERROR(f"✗ Failed to send template message: {e.message}"),
             )
             if e.error_code:
                 self.stdout.write(f"Error code: {e.error_code}")
@@ -174,13 +174,13 @@ class Command(BaseCommand):
             profile = message_service.api.get_business_profile()
 
             self.stdout.write(
-                self.style.SUCCESS("✓ Business profile retrieved successfully")
+                self.style.SUCCESS("✓ Business profile retrieved successfully"),
             )
 
             self.stdout.write(f'Verified name: {profile.get("verified_name")}')
             self.stdout.write(f'Display phone: {profile.get("display_phone_number")}')
             self.stdout.write(
-                f'Verification status: {profile.get("code_verification_status")}'
+                f'Verification status: {profile.get("code_verification_status")}',
             )
 
         except WhatsAppAPIError as e:
@@ -194,19 +194,20 @@ class Command(BaseCommand):
             templates = message_service.api.get_templates()
 
             self.stdout.write(
-                self.style.SUCCESS(f"✓ Retrieved {len(templates)} templates")
+                self.style.SUCCESS(f"✓ Retrieved {len(templates)} templates"),
             )
 
             for template in templates:
                 self.stdout.write(
-                    f'- {template["name"]} ({template["language"]}) - {template["status"]}'
+                    f'- {template["name"]} ({template["language"]}) - '
+                    f'{template["status"]}',
                 )
                 if template.get("quality_score"):
                     self.stdout.write(
-                        f'  Quality: {template["quality_score"].get("score", "N/A")}'
+                        f'  Quality: {template["quality_score"].get("score", "N/A")}',
                     )
 
         except WhatsAppAPIError as e:
             self.stdout.write(
-                self.style.ERROR(f"✗ Failed to get templates: {e.message}")
+                self.style.ERROR(f"✗ Failed to get templates: {e.message}"),
             )

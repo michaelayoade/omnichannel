@@ -1,5 +1,4 @@
-"""
-Tests for custom encrypted model fields.
+"""Tests for custom encrypted model fields.
 
 This module tests the behavior of the EncryptedCharField and EncryptedTextField
 to ensure they correctly handle encryption and decryption of data.
@@ -55,17 +54,17 @@ class EncryptedFieldsTestCase(TestCase):
 
         # Test encryption
         encrypted_value = field.get_prep_value("test_value")
-        self.assertEqual(encrypted_value, "encrypted:test_value")
+        assert encrypted_value == "encrypted:test_value"
         self.mock_encrypt.assert_called_with("test_value")
 
         # Test decryption from db
         decrypted_value = field.from_db_value("encrypted:test_value", None, None)
-        self.assertEqual(decrypted_value, "test_value")
+        assert decrypted_value == "test_value"
         self.mock_decrypt.assert_called_with("encrypted:test_value")
 
         # Test to_python
         python_value = field.to_python("encrypted:test_value")
-        self.assertEqual(python_value, "test_value")
+        assert python_value == "test_value"
 
     def test_encrypted_text_field(self):
         """Test EncryptedTextField behavior."""
@@ -73,15 +72,15 @@ class EncryptedFieldsTestCase(TestCase):
 
         # Test encryption
         encrypted_value = field.get_prep_value("test_value")
-        self.assertEqual(encrypted_value, "encrypted:test_value")
+        assert encrypted_value == "encrypted:test_value"
 
         # Test decryption
         decrypted_value = field.from_db_value("encrypted:test_value", None, None)
-        self.assertEqual(decrypted_value, "test_value")
+        assert decrypted_value == "test_value"
 
         # Test to_python
         python_value = field.to_python("encrypted:test_value")
-        self.assertEqual(python_value, "test_value")
+        assert python_value == "test_value"
 
     def test_disabled_encryption(self):
         """Test fields with encryption disabled."""
@@ -91,8 +90,8 @@ class EncryptedFieldsTestCase(TestCase):
         value = "test_value"
 
         # Should not encrypt or decrypt when disabled
-        self.assertEqual(field.get_prep_value(value), value)
-        self.assertEqual(field.from_db_value(value, None, None), value)
+        assert field.get_prep_value(value) == value
+        assert field.from_db_value(value, None, None) == value
 
         # Encryption functions should not be called
         self.mock_encrypt.assert_not_called()
@@ -103,9 +102,9 @@ class EncryptedFieldsTestCase(TestCase):
         field = EncryptedCharField(max_length=100)
 
         # None should pass through untouched
-        self.assertIsNone(field.get_prep_value(None))
-        self.assertIsNone(field.from_db_value(None, None, None))
-        self.assertIsNone(field.to_python(None))
+        assert field.get_prep_value(None) is None
+        assert field.from_db_value(None, None, None) is None
+        assert field.to_python(None) is None
 
     def test_error_handling(self):
         """Test error handling during decryption."""
@@ -117,7 +116,7 @@ class EncryptedFieldsTestCase(TestCase):
         # Should return the original value on error
         original = "invalid:value"
         result = field.from_db_value(original, None, None)
-        self.assertEqual(result, original)
+        assert result == original
 
         # Reset side effect
         self.mock_decrypt.side_effect = lambda x: x.replace("encrypted:", "")
@@ -127,10 +126,10 @@ class EncryptedFieldsTestCase(TestCase):
         field = EncryptedCharField(max_length=100)
 
         # Should pass with encryption key available
-        self.assertEqual(len(field.check()), 0)
+        assert len(field.check()) == 0
 
         # Should fail when encryption is enabled but key is missing
         self.mock_get_config.return_value = None
         errors = field.check()
-        self.assertEqual(len(errors), 1)
-        self.assertEqual(errors[0].id, "email_integration.E001")
+        assert len(errors) == 1
+        assert errors[0].id == "email_integration.E001"

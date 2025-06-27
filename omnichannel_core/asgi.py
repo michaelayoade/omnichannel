@@ -1,5 +1,4 @@
-"""
-ASGI config for omnichannel_core project.
+"""ASGI config for omnichannel_core project.
 
 It exposes the ASGI callable as a module-level variable named ``application``.
 
@@ -33,7 +32,7 @@ application = ProtocolTypeRouter(
     {
         "http": http_application,
         "websocket": AuthMiddlewareStack(
-            TokenAuthMiddleware(URLRouter(agent_hub.routing.websocket_urlpatterns))
+            TokenAuthMiddleware(URLRouter(agent_hub.routing.websocket_urlpatterns)),
         ),
-    }
+    },
 )

@@ -23,12 +23,12 @@ def process_email_rules(email_message_id: int):
         adapter = get_adapter(account.outbound_channel, account)
         if not isinstance(adapter, BaseOutboundAdapter):
             raise TypeError(
-                f"Adapter for {account.outbound_channel} is not an outbound adapter."
+                f"Adapter for {account.outbound_channel} is not an outbound adapter.",
             )
 
         # Get applicable rules for the account
         rules = EmailRule.objects.filter(account=account, is_active=True).order_by(
-            "priority"
+            "priority",
         )
 
         for rule in rules:
@@ -44,5 +44,5 @@ def process_email_rules(email_message_id: int):
         logger.error(f"Email message {email_message_id} not found")
     except Exception as e:
         logger.error(
-            f"Error processing email rules for message {email_message_id}: {e}"
+            f"Error processing email rules for message {email_message_id}: {e}",
         )

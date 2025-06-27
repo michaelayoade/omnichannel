@@ -1,5 +1,4 @@
-"""
-Monitoring utilities for email integration.
+"""Monitoring utilities for email integration.
 
 This module provides tools for application monitoring, error reporting,
 and observability using services like Sentry.
@@ -17,8 +16,7 @@ logger = ContextLogger(__name__)
 
 
 def setup_sentry():
-    """
-    Configure Sentry for error reporting if available.
+    """Configure Sentry for error reporting if available.
 
     This should be called during Django initialization to set up
     error monitoring with proper configuration.
@@ -59,21 +57,23 @@ def setup_sentry():
         logger.warning("Sentry SDK not installed - error reporting disabled")
         return False
     except Exception as e:
-        logger.error(f"Failed to configure Sentry: {str(e)}")
+        logger.error(f"Failed to configure Sentry: {e!s}")
         return False
 
 
 def capture_exception(func=None, *, tags=None, level="error"):
-    """
-    Decorator to capture exceptions with Sentry and proper context.
+    """Decorator to capture exceptions with Sentry and proper context.
 
     Args:
+    ----
         func: The function to wrap
         tags: Dictionary of tags to add to the error
         level: Error level (error, warning)
 
     Returns:
+    -------
         Wrapped function that reports exceptions to Sentry
+
     """
 
     def decorator(f):
@@ -96,7 +96,7 @@ def capture_exception(func=None, *, tags=None, level="error"):
                 if "_request_id" in kwargs:
                     request_id = kwargs["_request_id"]
 
-                # If not found in kwargs, try to find it in args that are request objects
+                # If not found in kwargs, try to find it in args that are request objs
                 if not request_id:
                     for arg in args:
                         if hasattr(arg, "request_id"):
@@ -113,11 +113,11 @@ def capture_exception(func=None, *, tags=None, level="error"):
                 # Log with appropriate level
                 if level == "error":
                     logger.error(
-                        f"Exception in {f.__qualname__}: {str(e)}", extra=context
+                        f"Exception in {f.__qualname__}: {e!s}", extra=context,
                     )
                 else:
                     logger.warning(
-                        f"Exception in {f.__qualname__}: {str(e)}", extra=context
+                        f"Exception in {f.__qualname__}: {e!s}", extra=context,
                     )
 
                 # Report to Sentry if available
@@ -150,7 +150,7 @@ def capture_exception(func=None, *, tags=None, level="error"):
                                         "key",
                                     ):
                                         scope.set_context(
-                                            f"arg:{arg_name}", repr(args[i])
+                                            f"arg:{arg_name}", repr(args[i]),
                                         )
 
                         # Capture the exception

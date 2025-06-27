@@ -2,7 +2,6 @@ import email
 import imaplib
 import logging
 import poplib
-from typing import Dict, List, Tuple
 
 from django.core.files.base import ContentFile
 from django.db import transaction
@@ -28,8 +27,7 @@ logger = logging.getLogger(__name__)
 
 
 class IMAPService(BaseInboundAdapter):
-    """
-    IMAP service for receiving emails from email accounts.
+    """IMAP service for receiving emails from email accounts.
     Supports both IMAP and POP3 protocols with polling mechanism.
     """
 
@@ -44,11 +42,11 @@ class IMAPService(BaseInboundAdapter):
         try:
             if self.account.incoming_use_ssl:
                 imap = imaplib.IMAP4_SSL(
-                    self.account.incoming_server, self.account.incoming_port
+                    self.account.incoming_server, self.account.incoming_port,
                 )
             else:
                 imap = imaplib.IMAP4(
-                    self.account.incoming_server, self.account.incoming_port
+                    self.account.incoming_server, self.account.incoming_port,
                 )
 
             imap.login(self.account.incoming_username, self.account.incoming_password)
@@ -60,7 +58,7 @@ class IMAPService(BaseInboundAdapter):
             raise ConnectionError(f"IMAP connection failed: {e}")
         except Exception as e:
             raise ConnectionError(
-                f"A unexpected error occurred during IMAP connection: {e}"
+                f"A unexpected error occurred during IMAP connection: {e}",
             )
 
     def _create_pop3_connection(self) -> poplib.POP3:
@@ -68,11 +66,11 @@ class IMAPService(BaseInboundAdapter):
         try:
             if self.account.incoming_use_ssl:
                 pop = poplib.POP3_SSL(
-                    self.account.incoming_server, self.account.incoming_port
+                    self.account.incoming_server, self.account.incoming_port,
                 )
             else:
                 pop = poplib.POP3(
-                    self.account.incoming_server, self.account.incoming_port
+                    self.account.incoming_server, self.account.incoming_port,
                 )
 
             pop.user(self.account.incoming_username)
@@ -85,7 +83,7 @@ class IMAPService(BaseInboundAdapter):
             raise ConnectionError(f"POP3 connection failed: {e}")
         except Exception as e:
             raise ConnectionError(
-                f"A unexpected error occurred during POP3 connection: {e}"
+                f"A unexpected error occurred during POP3 connection: {e}",
             )
 
     def validate_credentials(self) -> bool:
@@ -100,25 +98,27 @@ class IMAPService(BaseInboundAdapter):
             return True
         except (AuthenticationError, ConnectionError) as e:
             logger.warning(
-                f"Credential validation failed for account {self.account_id}: {e}"
+                f"Credential validation failed for account {self.account_id}: {e}",
             )
             return False
 
-    def poll(self, max_emails: int = None) -> EmailPollLog:
-        """
-        Poll for new emails using configured protocol.
+    def poll(self, max_emails: int | None = None) -> EmailPollLog:
+        """Poll for new emails using configured protocol.
 
         Args:
+        ----
             max_emails: Maximum number of emails to process (None = use account setting)
 
         Returns:
+        -------
             EmailPollLog object with polling results
+
         """
         started_at = timezone.now()
         max_emails = max_emails or self.account.max_emails_per_poll
 
         poll_log = EmailPollLog.objects.create(
-            account=self.account, status="success", started_at=started_at
+            account=self.account, status="success", started_at=started_at,
         )
 
         try:
@@ -142,12 +142,13 @@ class IMAPService(BaseInboundAdapter):
 
             logger.info(
                 f"Email poll completed for {self.account.email_address}: "
-                f"{poll_log.messages_processed} processed, {poll_log.messages_failed} failed"
+                f"{poll_log.messages_processed} processed, "
+                f"{poll_log.messages_failed} failed",
             )
 
             return poll_log
 
-        except (AuthenticationError, ConnectionError, PollingError) as e:
+        except (imaplib.IMAP4.error, poplib.error_proto, PollingError) as e:
             poll_log.status = "error"
             poll_log.error_message = str(e)
             poll_log.completed_at = timezone.now()
@@ -159,15 +160,17 @@ class IMAPService(BaseInboundAdapter):
             self.account.save()
 
             logger.error(
-                f"Email poll for {self.account.email_address} failed due to a channel error: {e}"
+                f"Email poll for {self.account.email_address} "
+                f"failed due to a channel error: {e}",
             )
             raise
         except Exception as e:
             logger.error(
-                f"An unexpected error occurred during email poll for {self.account.email_address}: {e}"
+                f"An unexpected error occurred during email poll for "
+                f"{self.account.email_address}: {e}",
             )
             raise PollingError(
-                f"An unexpected error occurred during email poll: {e}"
+                f"An unexpected error occurred during email poll: {e}",
             ) from e
 
     def _poll_imap_emails(self, poll_log: EmailPollLog, max_emails: int):
@@ -201,9 +204,13 @@ class IMAPService(BaseInboundAdapter):
                     poll_log.messages_processed += 1
 
                 except Exception as e:
-                    logger.error(f"Error processing IMAP message {msg_id}: {e}")
+                    logger.error(
+                        f"Error processing IMAP message {msg_id}: "
+                        f"{e}",
+                    )
                     poll_log.messages_failed += 1
-                    # Optionally, re-raise as a PollingError if you want to stop the whole poll
+                    # Optionally, re-raise as a PollingError if you want to stop
+                    # the whole poll
                     # raise PollingError(f"Failed to process message {msg_id}") from e
 
             poll_log.save()
@@ -234,7 +241,7 @@ class IMAPService(BaseInboundAdapter):
                     if (
                         message_id
                         and EmailMessage.objects.filter(
-                            external_message_id=message_id
+                            external_message_id=message_id,
                         ).exists()
                     ):
                         continue
@@ -253,10 +260,9 @@ class IMAPService(BaseInboundAdapter):
             poll_log.save()
 
     def _process_email_message(
-        self, email_message: email.message.Message, poll_log: EmailPollLog
+        self, email_message: email.message.Message, poll_log: EmailPollLog,
     ):
         """Process a single email message and save to database."""
-
         try:
             # Parse email headers and content
             parsed_data = self.parser.parse_email(email_message)
@@ -324,7 +330,7 @@ class IMAPService(BaseInboundAdapter):
             raise
 
     def _process_attachments(
-        self, email_message: EmailMessage, attachments: List[Dict]
+        self, email_message: EmailMessage, attachments: list[dict],
     ):
         """Process and save email attachments."""
         for attachment_data in attachments:
@@ -341,13 +347,13 @@ class IMAPService(BaseInboundAdapter):
 
                 # Save file content
                 file_content = ContentFile(
-                    attachment_data["content"], name=attachment_data["filename"]
+                    attachment_data["content"], name=attachment_data["filename"],
                 )
                 attachment.file_path.save(attachment_data["filename"], file_content)
 
             except Exception as e:
                 logger.error(
-                    f"Error processing attachment {attachment_data['filename']}: {e}"
+                    f"Error processing attachment {attachment_data['filename']}: {e}",
                 )
 
     def _create_or_update_contact(self, email_message: EmailMessage):
@@ -438,7 +444,7 @@ class IMAPService(BaseInboundAdapter):
                 # Also link the thread
                 if email_message.thread_id:
                     thread = EmailThread.objects.filter(
-                        thread_id=email_message.thread_id
+                        thread_id=email_message.thread_id,
                     ).first()
                     if thread and not thread.linked_customer:
                         thread.linked_customer = customer
@@ -447,7 +453,7 @@ class IMAPService(BaseInboundAdapter):
         except Exception as e:
             logger.error(f"Error linking email to customer: {e}")
 
-    def _determine_priority(self, parsed_data: Dict) -> str:
+    def _determine_priority(self, parsed_data: dict) -> str:
         """Determine email priority from headers."""
         headers = parsed_data.get("headers", {})
 
@@ -473,7 +479,7 @@ class IMAPService(BaseInboundAdapter):
 
         return "normal"
 
-    def test_connection(self) -> Tuple[bool, str]:
+    def test_connection(self) -> tuple[bool, str]:
         """Test email connection and authentication."""
         try:
             if self.account.incoming_protocol == "imap":
@@ -488,9 +494,9 @@ class IMAPService(BaseInboundAdapter):
         except EmailReceiveError as e:
             return False, str(e)
         except Exception as e:
-            return False, f"Connection test failed: {str(e)}"
+            return False, f"Connection test failed: {e!s}"
 
-    def get_folder_list(self) -> List[str]:
+    def get_folder_list(self) -> list[str]:
         """Get list of available IMAP folders."""
         if self.account.incoming_protocol != "imap":
             return ["INBOX"]

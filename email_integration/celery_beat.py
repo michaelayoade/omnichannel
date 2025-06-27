@@ -2,7 +2,8 @@ from datetime import timedelta
 
 # This schedule should be included in the main project's settings.
 # For example, in settings.py:
-# from email_integration.celery_beat import CELERY_BEAT_SCHEDULE as email_integration_schedule
+# from email_integration.celery_beat import CELERY_BEAT_SCHEDULE as \
+# email_integration_schedule
 # CELERY_BEAT_SCHEDULE.update(email_integration_schedule)
 
 CELERY_BEAT_SCHEDULE = {

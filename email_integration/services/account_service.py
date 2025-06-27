@@ -1,5 +1,4 @@
-"""
-Account management service for email integration.
+"""Account management service for email integration.
 
 This module handles all operations related to email accounts including:
 - Creation, updating, and deletion of accounts
@@ -26,19 +25,22 @@ class AccountService(BaseService):
 
     @transaction.atomic
     def create_account(self, data, organization_id=None, user=None):
-        """
-        Create a new email account.
+        """Create a new email account.
 
         Args:
+        ----
             data: Dictionary containing account data
             organization_id: Optional organization ID
             user: Optional user creating the account
 
         Returns:
+        -------
             Newly created EmailAccount instance
 
         Raises:
+        ------
             ValidationError: If account data is invalid
+
         """
         # Set context for logging
         self.logger.set_context(
@@ -68,7 +70,7 @@ class AccountService(BaseService):
             account.save()
 
             self.log_transaction(
-                "create_account", "success", {"account_id": account.id}
+                "create_account", "success", {"account_id": account.id},
             )
             return account
 
@@ -78,20 +80,23 @@ class AccountService(BaseService):
 
     @transaction.atomic
     def update_account(self, account_id, data, user=None):
-        """
-        Update an existing email account.
+        """Update an existing email account.
 
         Args:
+        ----
             account_id: ID of the account to update
             data: Dictionary containing updated account data
             user: Optional user updating the account
 
         Returns:
+        -------
             Updated EmailAccount instance
 
         Raises:
+        ------
             AccountNotFoundError: If account doesn't exist
             ValidationError: If account data is invalid
+
         """
         # Set context for logging
         self.logger.set_context(
@@ -125,7 +130,7 @@ class AccountService(BaseService):
             account.save()
 
             self.log_transaction(
-                "update_account", "success", {"account_id": account.id}
+                "update_account", "success", {"account_id": account.id},
             )
             return account
 
@@ -135,18 +140,21 @@ class AccountService(BaseService):
 
     @transaction.atomic
     def delete_account(self, account_id, user=None):
-        """
-        Delete an email account.
+        """Delete an email account.
 
         Args:
+        ----
             account_id: ID of the account to delete
             user: Optional user deleting the account
 
         Returns:
+        -------
             Boolean indicating success
 
         Raises:
+        ------
             AccountNotFoundError: If account doesn't exist
+
         """
         # Set context for logging
         self.logger.set_context(
@@ -165,7 +173,7 @@ class AccountService(BaseService):
             account.save()
 
             self.log_transaction(
-                "delete_account", "success", {"account_id": account.id}
+                "delete_account", "success", {"account_id": account.id},
             )
             return True
 
@@ -174,32 +182,37 @@ class AccountService(BaseService):
             raise
 
     def get_account_by_id(self, account_id):
-        """
-        Get an email account by ID.
+        """Get an email account by ID.
 
         Args:
+        ----
             account_id: ID of the account to retrieve
 
         Returns:
+        -------
             EmailAccount instance
 
         Raises:
+        ------
             AccountNotFoundError: If account doesn't exist
+
         """
         return self.get_account(account_id)
 
     def list_accounts(self, organization_id=None, status=None, limit=100, offset=0):
-        """
-        List email accounts with optional filtering.
+        """List email accounts with optional filtering.
 
         Args:
+        ----
             organization_id: Optional organization ID to filter by
             status: Optional account status to filter by
             limit: Maximum number of accounts to return
             offset: Offset for pagination
 
         Returns:
+        -------
             QuerySet of EmailAccount instances
+
         """
         # Start with all accounts
         queryset = EmailAccount.objects.all()
@@ -215,14 +228,16 @@ class AccountService(BaseService):
         return queryset.order_by("-created_at")[offset : offset + limit]
 
     def _validate_account_settings(self, data):
-        """
-        Validate email account settings.
+        """Validate email account settings.
 
         Args:
+        ----
             data: Dictionary containing account data
 
         Raises:
+        ------
             ValidationError: If validation fails
+
         """
         # Required fields
         if "email_address" not in data:

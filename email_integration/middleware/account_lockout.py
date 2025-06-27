@@ -1,12 +1,12 @@
-"""
-Account lockout middleware to protect against brute force authentication attacks.
+"""Account lockout middleware to protect against brute force authentication attacks.
 
 This module implements a middleware component that tracks failed login attempts
 and temporarily locks accounts after repeated failures.
 """
 
 import re
-from typing import Any, Callable, Dict, Optional
+from collections.abc import Callable
+from typing import Any
 
 from django.core.cache import cache
 from django.http import HttpRequest, HttpResponse, JsonResponse
@@ -24,19 +24,19 @@ LOCKOUT_PREFIX = "account_lock:"
 
 
 class AccountLockoutMiddleware:
-    """
-    Middleware that implements account lockout after repeated failed authentications.
+    """Middleware that implements account lockout after repeated failed authentications.
 
     Tracks failed login attempts by username and/or IP address, and
     temporarily locks accounts after a configurable threshold is reached.
     """
 
     def __init__(self, get_response: Callable):
-        """
-        Initialize middleware with response handler.
+        """Initialize middleware with response handler.
 
         Args:
+        ----
             get_response: Callable that takes a request and returns a response
+
         """
         self.get_response = get_response
 
@@ -59,18 +59,20 @@ class AccountLockoutMiddleware:
 
         # Regular expression to match username or email in request body
         self.username_regex = re.compile(
-            r'["\']?(username|email)["\']?\s*:\s*["\']([^"\']+)["\']?'
+            r'["\']?(username|email)["\']?\s*:\s*["\']([^"\']+)["\']?',
         )
 
     def __call__(self, request: HttpRequest) -> HttpResponse:
-        """
-        Process request and apply account lockout logic if applicable.
+        """Process request and apply account lockout logic if applicable.
 
         Args:
+        ----
             request: The incoming HTTP request
 
         Returns:
+        -------
             HTTP response
+
         """
         if not self.enabled:
             return self.get_response(request)
@@ -96,8 +98,12 @@ class AccountLockoutMiddleware:
                     if any(path in request.path for path in ("/api/", "/token/")):
                         return JsonResponse(
                             {
-                                "error": "Too many failed login attempts. Account temporarily locked.",
-                                "detail": f"Please try again in {self.lockout_duration} minutes.",
+                                "error": "Too many failed login attempts. "
+                                        "Account temporarily locked.",
+                                "detail": (
+                                    f"Please try again in "
+                                    f"{self.lockout_duration} minutes."
+                                ),
                             },
                             status=403,
                         )
@@ -127,26 +133,30 @@ class AccountLockoutMiddleware:
         return response
 
     def _is_login_path(self, path: str) -> bool:
-        """
-        Check if the request path is a login endpoint.
+        """Check if the request path is a login endpoint.
 
         Args:
+        ----
             path: The request path
 
         Returns:
+        -------
             True if this is a login path, False otherwise
+
         """
         return any(login_path in path for login_path in self.login_paths)
 
-    def _extract_identity(self, request: HttpRequest) -> Optional[str]:
-        """
-        Extract username or email from request.
+    def _extract_identity(self, request: HttpRequest) -> str | None:
+        """Extract username or email from request.
 
         Args:
+        ----
             request: The HTTP request
 
         Returns:
+        -------
             Username/email string or None if not found
+
         """
         # First check form data
         identity = request.POST.get("username") or request.POST.get("email")
@@ -165,14 +175,16 @@ class AccountLockoutMiddleware:
         return identity.lower() if identity else None
 
     def _get_client_ip(self, request: HttpRequest) -> str:
-        """
-        Get the client IP address from request.
+        """Get the client IP address from request.
 
         Args:
+        ----
             request: The HTTP request
 
         Returns:
+        -------
             IP address string
+
         """
         x_forwarded_for = request.META.get("HTTP_X_FORWARDED_FOR")
         if x_forwarded_for:
@@ -184,25 +196,28 @@ class AccountLockoutMiddleware:
         return ip
 
     def _get_cache_key(self, identity: str, prefix: str) -> str:
-        """
-        Generate a cache key for tracking login attempts.
+        """Generate a cache key for tracking login attempts.
 
         Args:
+        ----
             identity: Username or email
             prefix: Cache key prefix
 
         Returns:
+        -------
             Cache key string
+
         """
         return f"{prefix}{identity}"
 
     def _mark_login_attempt(self, identity: str, request: HttpRequest) -> None:
-        """
-        Mark that a login attempt is being made.
+        """Mark that a login attempt is being made.
 
         Args:
+        ----
             identity: Username or email
             request: The HTTP request
+
         """
         if not identity:
             return
@@ -218,12 +233,13 @@ class AccountLockoutMiddleware:
         )
 
     def _register_failed_attempt(self, identity: str, request: HttpRequest) -> None:
-        """
-        Register a failed login attempt and potentially lock the account.
+        """Register a failed login attempt and potentially lock the account.
 
         Args:
+        ----
             identity: Username or email
             request: The HTTP request
+
         """
         if not identity:
             return
@@ -258,12 +274,13 @@ class AccountLockoutMiddleware:
             self._lock_account(identity, attempts["ips"])
 
     def _lock_account(self, identity: str, ip_addresses: list) -> None:
-        """
-        Lock an account after too many failed attempts.
+        """Lock an account after too many failed attempts.
 
         Args:
+        ----
             identity: Username or email
             ip_addresses: List of IP addresses that attempted login
+
         """
         lockout_key = self._get_cache_key(identity, LOCKOUT_PREFIX)
 
@@ -292,15 +309,17 @@ class AccountLockoutMiddleware:
         self._notify_lockout(identity, lockout_data)
 
     def _is_account_locked(self, identity: str, request: HttpRequest) -> bool:
-        """
-        Check if an account is currently locked.
+        """Check if an account is currently locked.
 
         Args:
+        ----
             identity: Username or email
             request: The HTTP request
 
         Returns:
+        -------
             True if account is locked, False otherwise
+
         """
         lockout_key = self._get_cache_key(identity, LOCKOUT_PREFIX)
         lockout_data = cache.get(lockout_key)
@@ -318,13 +337,14 @@ class AccountLockoutMiddleware:
 
         return False
 
-    def _notify_lockout(self, identity: str, lockout_data: Dict[str, Any]) -> None:
-        """
-        Notify administrators about account lockout.
+    def _notify_lockout(self, identity: str, lockout_data: dict[str, Any]) -> None:
+        """Notify administrators about account lockout.
 
         Args:
+        ----
             identity: Username or email
             lockout_data: Lockout information including IPs and timestamp
+
         """
         # This could send an email, push to a monitoring service, etc.
         # For now, just log the event

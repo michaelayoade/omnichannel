@@ -1,5 +1,4 @@
-"""
-IMAP adapter implementation for email integration.
+"""IMAP adapter implementation for email integration.
 
 This module provides adapter classes for connecting to and interacting
 with email accounts using the Internet Message Access Protocol (IMAP).
@@ -27,19 +26,19 @@ logger = ContextLogger(__name__)
 
 
 class IMAPAdapter(BaseAdapter, BaseInboundAdapter):
-    """
-    IMAP protocol adapter for email integration.
+    """IMAP protocol adapter for email integration.
 
     This adapter implements the BaseInboundAdapter interface for the
     IMAP protocol, allowing polling and retrieval of email messages.
     """
 
     def __init__(self, account: EmailAccount):
-        """
-        Initialize IMAP adapter with account settings.
+        """Initialize IMAP adapter with account settings.
 
         Args:
+        ----
             account: EmailAccount instance with IMAP server settings
+
         """
         super().__init__(account)
         self.server = None
@@ -55,15 +54,17 @@ class IMAPAdapter(BaseAdapter, BaseInboundAdapter):
         )  # In production, use a proper encryption/decryption mechanism
 
     def authenticate(self):
-        """
-        Establish connection and authenticate with the IMAP server.
+        """Establish connection and authenticate with the IMAP server.
 
-        Returns:
+        Returns
+        -------
             True if authentication was successful
 
-        Raises:
+        Raises
+        ------
             ConnectionError: If connection to server fails
             AuthenticationError: If authentication fails
+
         """
         logger.info(
             "Connecting to IMAP server",
@@ -81,13 +82,13 @@ class IMAPAdapter(BaseAdapter, BaseInboundAdapter):
                 )
             else:
                 self.server = imaplib.IMAP4(
-                    self.server_host, self.server_port, timeout=self.timeout
+                    self.server_host, self.server_port, timeout=self.timeout,
                 )
 
             # Login to the server
             self.server.login(self.username, self.password)
             logger.info(
-                "IMAP authentication successful", extra={"account_id": self.account.id}
+                "IMAP authentication successful", extra={"account_id": self.account.id},
             )
             return True
 
@@ -96,21 +97,22 @@ class IMAPAdapter(BaseAdapter, BaseInboundAdapter):
                 "IMAP authentication failed",
                 extra={"account_id": self.account.id, "error": str(e)},
             )
-            raise AuthenticationError(f"IMAP authentication failed: {str(e)}")
+            raise AuthenticationError(f"IMAP authentication failed: {e!s}")
 
         except (ConnectionRefusedError, TimeoutError, ssl.SSLError, OSError) as e:
             logger.error(
                 "IMAP connection failed",
                 extra={"account_id": self.account.id, "error": str(e)},
             )
-            raise ConnectionError(f"IMAP connection failed: {str(e)}")
+            raise ConnectionError(f"IMAP connection failed: {e!s}")
 
     def validate_credentials(self) -> bool:
-        """
-        Validate account credentials with the IMAP server.
+        """Validate account credentials with the IMAP server.
 
-        Returns:
+        Returns
+        -------
             True if credentials are valid, False otherwise
+
         """
         try:
             self.authenticate()
@@ -120,19 +122,22 @@ class IMAPAdapter(BaseAdapter, BaseInboundAdapter):
             return False
 
     def fetch_new_messages(self, folder="INBOX", max_messages=None):
-        """
-        Fetch new messages from the specified IMAP folder.
+        """Fetch new messages from the specified IMAP folder.
 
         Args:
+        ----
             folder: IMAP folder to check (default: INBOX)
             max_messages: Maximum number of messages to fetch
 
         Returns:
+        -------
             List of message data dictionaries
 
         Raises:
+        ------
             ConnectionError: If connection to server fails
             AuthenticationError: If authentication fails
+
         """
         # Ensure we're authenticated
         if not self.server:
@@ -197,14 +202,16 @@ class IMAPAdapter(BaseAdapter, BaseInboundAdapter):
             self._disconnect()
 
     def _fetch_message(self, msg_id):
-        """
-        Fetch a single message by ID.
+        """Fetch a single message by ID.
 
         Args:
+        ----
             msg_id: Message ID to fetch
 
         Returns:
+        -------
             Dictionary with message data
+
         """
         # Fetch the message
         status, msg_data = self.server.fetch(msg_id, "(RFC822)")
@@ -251,7 +258,7 @@ class IMAPAdapter(BaseAdapter, BaseInboundAdapter):
         if subject:
             # Remove Re:, Fwd: etc. and trim whitespace
             base_subject = re.sub(
-                r"^(?:Re|Fwd|FW|RE):\s*", "", subject, flags=re.IGNORECASE
+                r"^(?:Re|Fwd|FW|RE):\s*", "", subject, flags=re.IGNORECASE,
             )
             if base_subject:
                 # Use a hash of the base subject as conversation ID
@@ -280,15 +287,17 @@ class IMAPAdapter(BaseAdapter, BaseInboundAdapter):
         }
 
     def _get_header(self, email_message, header_name):
-        """
-        Extract and decode an email header.
+        """Extract and decode an email header.
 
         Args:
+        ----
             email_message: Email message object
             header_name: Name of header to extract
 
         Returns:
+        -------
             Decoded header value or empty string
+
         """
         value = email_message.get(header_name, "")
         if not value:
@@ -309,14 +318,16 @@ class IMAPAdapter(BaseAdapter, BaseInboundAdapter):
         return "".join(decoded_parts)
 
     def _get_message_body(self, email_message):
-        """
-        Extract plain text and HTML bodies from the email message.
+        """Extract plain text and HTML bodies from the email message.
 
         Args:
+        ----
             email_message: Email message object
 
         Returns:
+        -------
             Tuple of (plain_text, html)
+
         """
         body_plain = None
         body_html = None
@@ -342,14 +353,16 @@ class IMAPAdapter(BaseAdapter, BaseInboundAdapter):
         return body_plain, body_html
 
     def _decode_part(self, part):
-        """
-        Decode the content of an email part.
+        """Decode the content of an email part.
 
         Args:
+        ----
             part: Email message part
 
         Returns:
+        -------
             Decoded content as string
+
         """
         content = part.get_payload(decode=True)
         if content is None:
@@ -363,14 +376,16 @@ class IMAPAdapter(BaseAdapter, BaseInboundAdapter):
             return content.decode("utf-8", errors="replace")
 
     def _get_attachments(self, email_message):
-        """
-        Extract attachments from the email message.
+        """Extract attachments from the email message.
 
         Args:
+        ----
             email_message: Email message object
 
         Returns:
+        -------
             List of attachment dictionaries
+
         """
         attachments = []
 
@@ -405,7 +420,7 @@ class IMAPAdapter(BaseAdapter, BaseInboundAdapter):
                     for filename_part, encoding in decode_header(filename):
                         if isinstance(filename_part, bytes):
                             filename_part = filename_part.decode(
-                                encoding or "utf-8", errors="replace"
+                                encoding or "utf-8", errors="replace",
                             )
                         filename_parts.append(str(filename_part))
                     filename = "".join(filename_parts)
@@ -435,7 +450,7 @@ class IMAPAdapter(BaseAdapter, BaseInboundAdapter):
                         "size": size,
                         "content": None,
                         "truncated": True,
-                    }
+                    },
                 )
                 continue
 
@@ -446,17 +461,18 @@ class IMAPAdapter(BaseAdapter, BaseInboundAdapter):
                     "content_type": part.get_content_type(),
                     "content": utils.encode_attachment(content),
                     "size": size,
-                }
+                },
             )
 
         return attachments
 
     def _create_ssl_context(self):
-        """
-        Create an SSL context with appropriate security settings.
+        """Create an SSL context with appropriate security settings.
 
-        Returns:
+        Returns
+        -------
             Configured SSL context
+
         """
         context = ssl.create_default_context()
 

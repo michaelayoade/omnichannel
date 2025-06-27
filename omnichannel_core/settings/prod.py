@@ -7,7 +7,7 @@ SECRET_KEY = config("SECRET_KEY")
 
 # Security settings
 ALLOWED_HOSTS = config(
-    "ALLOWED_HOSTS", cast=lambda v: [s.strip() for s in v.split(",")]
+    "ALLOWED_HOSTS", cast=lambda v: [s.strip() for s in v.split(",")],
 )
 SECURE_SSL_REDIRECT = config("SECURE_SSL_REDIRECT", default=True, cast=bool)
 SESSION_COOKIE_SECURE = True
@@ -21,7 +21,7 @@ X_FRAME_OPTIONS = "DENY"
 
 # Production CORS settings - more restrictive
 CORS_ALLOWED_ORIGINS = config(
-    "CORS_ALLOWED_ORIGINS", cast=lambda v: [s.strip() for s in v.split(",")]
+    "CORS_ALLOWED_ORIGINS", cast=lambda v: [s.strip() for s in v.split(",")],
 )
 CORS_ALLOW_CREDENTIALS = True
 

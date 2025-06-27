@@ -1,5 +1,4 @@
-"""
-Gmail API adapter implementation.
+"""Gmail API adapter implementation.
 
 Provides email operations via the Gmail API, supporting OAuth2 authentication,
 message fetching, and attachment handling.
@@ -9,7 +8,7 @@ import base64
 import uuid
 from email import policy
 from email.parser import BytesParser
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from django.core.files.base import ContentFile
 from google.oauth2.credentials import Credentials
@@ -34,19 +33,19 @@ logger = ContextLogger(__name__)
 
 
 class GmailAdapter(BaseInboundAdapter):
-    """
-    Gmail API adapter for sending and receiving emails.
+    """Gmail API adapter for sending and receiving emails.
 
     Uses OAuth2 authentication to access Gmail API for email operations.
     Provides functionality to fetch and parse messages.
     """
 
     def __init__(self, account):
-        """
-        Initialize the Gmail adapter with an email account.
+        """Initialize the Gmail adapter with an email account.
 
         Args:
+        ----
             account: The EmailAccount model instance
+
         """
         self.account = account
         self.service = None
@@ -67,11 +66,12 @@ class GmailAdapter(BaseInboundAdapter):
         self._check_oauth2_config()
 
     def _check_oauth2_config(self) -> None:
-        """
-        Check if required OAuth2 configuration is available.
+        """Check if required OAuth2 configuration is available.
 
-        Raises:
+        Raises
+        ------
             ConfigurationError: If OAuth2 configuration is missing
+
         """
         settings = self.account.server_settings or {}
         required_keys = ["client_id", "client_secret", "refresh_token"]
@@ -83,14 +83,16 @@ class GmailAdapter(BaseInboundAdapter):
                 raise ConfigurationError(error_msg)
 
     def _get_credentials(self) -> Credentials:
-        """
-        Get OAuth2 credentials for Gmail API access.
+        """Get OAuth2 credentials for Gmail API access.
 
-        Returns:
+        Returns
+        -------
             Google OAuth2 Credentials object
 
-        Raises:
+        Raises
+        ------
             AuthenticationError: If credentials cannot be obtained
+
         """
         try:
             credentials = self.account.get_credentials()
@@ -100,23 +102,24 @@ class GmailAdapter(BaseInboundAdapter):
             return Credentials(
                 token=oauth2.get("access_token"),
                 refresh_token=oauth2.get("refresh_token"),
-                                    token_uri="https://oauth2.googleapis.com/token",  # nosec B106
+                token_uri="https://oauth2.googleapis.com/token",  # nosec B106
                 client_id=oauth2.get("client_id"),
                 client_secret=oauth2.get("client_secret"),
                 scopes=["https://www.googleapis.com/auth/gmail.readonly"],
             )
         except Exception as e:
-            error_msg = f"Failed to create OAuth2 credentials: {str(e)}"
+            error_msg = f"Failed to create OAuth2 credentials: {e!s}"
             logger.error(error_msg)
             raise AuthenticationError(error_msg)
 
     def connect(self) -> None:
-        """
-        Connect to Gmail API by creating an authenticated service.
+        """Connect to Gmail API by creating an authenticated service.
 
-        Raises:
+        Raises
+        ------
             ConnectionError: If connection cannot be established
             AuthenticationError: If authentication fails
+
         """
         try:
             logger.info("Connecting to Gmail API")
@@ -124,7 +127,7 @@ class GmailAdapter(BaseInboundAdapter):
             # Get credentials and build Gmail service
             self.credentials = self._get_credentials()
             self.service = build(
-                "gmail", "v1", credentials=self.credentials, cache_discovery=False
+                "gmail", "v1", credentials=self.credentials, cache_discovery=False,
             )
 
             # Test connection by getting the user profile
@@ -138,43 +141,47 @@ class GmailAdapter(BaseInboundAdapter):
             # Re-raise authentication errors
             raise
         except HttpError as e:
-            error_msg = f"Gmail API HTTP error: {str(e)}"
+            error_msg = f"Gmail API HTTP error: {e!s}"
             logger.error(error_msg)
             if e.status_code == 401:
                 raise AuthenticationError(error_msg)
             else:
                 raise ConnectionError(error_msg)
         except Exception as e:
-            error_msg = f"Failed to connect to Gmail API: {str(e)}"
+            error_msg = f"Failed to connect to Gmail API: {e!s}"
             logger.error(error_msg)
             raise ConnectionError(error_msg)
 
     def authenticate(self) -> None:
-        """
-        Authenticate to Gmail API.
+        """Authenticate to Gmail API.
 
         For Gmail API, authentication is handled during connect(),
         so this method just ensures we have a valid connection.
 
-        Raises:
+        Raises
+        ------
             AuthenticationError: If authentication fails
+
         """
         if not self.service:
             self.connect()
 
-    def fetch_messages(self, since_date=None, limit=None) -> List[Dict[str, Any]]:
-        """
-        Fetch messages from Gmail.
+    def fetch_messages(self, since_date=None, limit=None) -> list[dict[str, Any]]:
+        """Fetch messages from Gmail.
 
         Args:
+        ----
             since_date: Optional datetime to fetch messages since
             limit: Maximum number of messages to fetch
 
         Returns:
+        -------
             List of parsed email message dictionaries
 
         Raises:
+        ------
             FetchError: If messages cannot be fetched
+
         """
         if not self.service:
             self.connect()
@@ -226,35 +233,37 @@ class GmailAdapter(BaseInboundAdapter):
                         parsed_messages.append(parsed_msg)
 
                 except Exception as e:
-                    logger.warning(f"Failed to process message {message_id}: {str(e)}")
+                    logger.warning(f"Failed to process message {message_id}: {e!s}")
                     continue
 
             logger.info(
-                f"Successfully fetched {len(parsed_messages)} messages from Gmail API"
+                f"Successfully fetched {len(parsed_messages)} messages from Gmail API",
             )
             return parsed_messages
 
         except HttpError as e:
-            error_msg = f"Gmail API error fetching messages: {str(e)}"
+            error_msg = f"Gmail API error fetching messages: {e!s}"
             logger.error(error_msg)
             raise FetchError(error_msg)
 
         except Exception as e:
-            error_msg = f"Failed to fetch messages from Gmail API: {str(e)}"
+            error_msg = f"Failed to fetch messages from Gmail API: {e!s}"
             logger.exception(error_msg)
             raise FetchError(error_msg)
 
     def _parse_gmail_message(
-        self, gmail_message: Dict[str, Any]
-    ) -> Optional[Dict[str, Any]]:
-        """
-        Parse a Gmail API message into our standard format.
+        self, gmail_message: dict[str, Any],
+    ) -> dict[str, Any] | None:
+        """Parse a Gmail API message into our standard format.
 
         Args:
+        ----
             gmail_message: Raw Gmail message from API
 
         Returns:
+        -------
             Dictionary containing parsed email fields or None if parsing failed
+
         """
         try:
             # Get the raw message content and decode
@@ -293,7 +302,7 @@ class GmailAdapter(BaseInboundAdapter):
                     # Set content file
                     content = ContentFile(attachment_data["content"])
                     attachment.file.save(
-                        attachment_data["filename"], content, save=False
+                        attachment_data["filename"], content, save=False,
                     )
                     attachments.append(attachment)
 
@@ -316,18 +325,20 @@ class GmailAdapter(BaseInboundAdapter):
             }
 
         except Exception as e:
-            logger.warning(f"Failed to parse Gmail message: {str(e)}")
+            logger.warning(f"Failed to parse Gmail message: {e!s}")
             return None
 
     def delete_message(self, message_id: str) -> bool:
-        """
-        Move a message to trash in Gmail.
+        """Move a message to trash in Gmail.
 
         Args:
+        ----
             message_id: The message ID to delete
 
         Returns:
+        -------
             True if successful, False otherwise
+
         """
         if not self.service:
             self.connect()
@@ -340,12 +351,11 @@ class GmailAdapter(BaseInboundAdapter):
             return True
 
         except Exception as e:
-            logger.error(f"Failed to delete message {message_id}: {str(e)}")
+            logger.error(f"Failed to delete message {message_id}: {e!s}")
             return False
 
     def disconnect(self) -> None:
-        """
-        Disconnect from the Gmail API.
+        """Disconnect from the Gmail API.
 
         For API-based connections, we simply nullify the service.
         """
@@ -354,16 +364,18 @@ class GmailAdapter(BaseInboundAdapter):
         logger.debug("Disconnected from Gmail API")
 
     @classmethod
-    def get_auth_url(cls, redirect_uri: str, state: str = None) -> str:
-        """
-        Get the OAuth2 authorization URL for Gmail.
+    def get_auth_url(cls, redirect_uri: str, state: str | None = None) -> str:
+        """Get the OAuth2 authorization URL for Gmail.
 
         Args:
+        ----
             redirect_uri: URI to redirect to after auth
             state: Optional state parameter for security
 
         Returns:
+        -------
             Authorization URL to redirect the user to
+
         """
         client_id = get_config("GMAIL_CLIENT_ID")
         client_secret = get_config("GMAIL_CLIENT_SECRET")
@@ -380,7 +392,7 @@ class GmailAdapter(BaseInboundAdapter):
                     "auth_uri": "https://accounts.google.com/o/oauth2/auth",
                     "token_uri": "https://oauth2.googleapis.com/token",
                     "redirect_uris": [redirect_uri],
-                }
+                },
             },
             scopes=[
                 "https://www.googleapis.com/auth/gmail.readonly",
@@ -393,25 +405,28 @@ class GmailAdapter(BaseInboundAdapter):
 
         # Generate authorization URL
         auth_url, _ = flow.authorization_url(
-            access_type="offline", prompt="consent", include_granted_scopes="true"
+            access_type="offline", prompt="consent", include_granted_scopes="true",
         )
 
         return auth_url
 
     @classmethod
-    def exchange_code(cls, code: str, redirect_uri: str) -> Dict[str, Any]:
-        """
-        Exchange authorization code for OAuth tokens.
+    def exchange_code(cls, code: str, redirect_uri: str) -> dict[str, Any]:
+        """Exchange authorization code for OAuth tokens.
 
         Args:
+        ----
             code: Authorization code from OAuth2 redirect
             redirect_uri: Redirect URI used in authorization
 
         Returns:
+        -------
             Dictionary with token information
 
         Raises:
+        ------
             AuthenticationError: If token exchange fails
+
         """
         client_id = get_config("GMAIL_CLIENT_ID")
         client_secret = get_config("GMAIL_CLIENT_SECRET")
@@ -429,7 +444,7 @@ class GmailAdapter(BaseInboundAdapter):
                         "auth_uri": "https://accounts.google.com/o/oauth2/auth",
                         "token_uri": "https://oauth2.googleapis.com/token",
                         "redirect_uris": [redirect_uri],
-                    }
+                    },
                 },
                 scopes=[
                     "https://www.googleapis.com/auth/gmail.readonly",
@@ -458,6 +473,6 @@ class GmailAdapter(BaseInboundAdapter):
             }
 
         except Exception as e:
-            error_msg = f"Failed to exchange OAuth2 code: {str(e)}"
+            error_msg = f"Failed to exchange OAuth2 code: {e!s}"
             logger.error(error_msg)
             raise AuthenticationError(error_msg)

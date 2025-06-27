@@ -1,5 +1,4 @@
-"""
-Domain-focused models for the ``email_integration`` app.
+"""Domain-focused models for the ``email_integration`` app.
 
 Each concept (accounts, messages, threads, etc.) lives in its own module to keep
 concerns isolated and the codebase maintainable.  For backward compatibility,

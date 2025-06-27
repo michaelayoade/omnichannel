@@ -57,17 +57,17 @@ def send_whatsapp_message(
     business_account_id: str,
     to: str,
     message_type: str,
-    content: str = None,
-    media_id: str = None,
-    media_url: str = None,
-    template_name: str = None,
-    template_components: list = None,
-    interactive_data: dict = None,
+    content: str | None = None,
+    media_id: str | None = None,
+    media_url: str | None = None,
+    template_name: str | None = None,
+    template_components: list | None = None,
+    interactive_data: dict | None = None,
 ):
     """Send WhatsApp message asynchronously."""
     try:
         business_account = WhatsAppBusinessAccount.objects.get(
-            business_account_id=business_account_id, is_active=True
+            business_account_id=business_account_id, is_active=True,
         )
 
         message_service = WhatsAppMessageService(business_account)
@@ -139,7 +139,7 @@ def sync_whatsapp_templates(business_account_id: str):
     """Sync WhatsApp message templates from API."""
     try:
         business_account = WhatsAppBusinessAccount.objects.get(
-            business_account_id=business_account_id, is_active=True
+            business_account_id=business_account_id, is_active=True,
         )
 
         api = WhatsAppBusinessAPI(business_account)
@@ -156,7 +156,7 @@ def sync_whatsapp_templates(business_account_id: str):
                     "category": template_data["category"],
                     "components": template_data.get("components", []),
                     "quality_score": template_data.get("quality_score", {}).get(
-                        "score", ""
+                        "score", "",
                     ),
                 },
             )
@@ -165,7 +165,7 @@ def sync_whatsapp_templates(business_account_id: str):
                 synced_count += 1
 
         logger.info(
-            f"Synced {synced_count} WhatsApp templates for {business_account.name}"
+            f"Synced {synced_count} WhatsApp templates for {business_account.name}",
         )
 
     except WhatsAppBusinessAccount.DoesNotExist:
@@ -182,7 +182,7 @@ def cleanup_old_webhook_events():
         # Delete processed events older than 30 days
         cutoff_date = timezone.now() - timedelta(days=30)
         deleted_count = WhatsAppWebhookEvent.objects.filter(
-            processing_status="processed", processed_at__lt=cutoff_date
+            processing_status="processed", processed_at__lt=cutoff_date,
         ).delete()[0]
 
         logger.info(f"Cleaned up {deleted_count} old webhook events")
@@ -190,7 +190,7 @@ def cleanup_old_webhook_events():
         # Delete failed events older than 7 days
         failed_cutoff_date = timezone.now() - timedelta(days=7)
         failed_deleted_count = WhatsAppWebhookEvent.objects.filter(
-            processing_status="failed", created_at__lt=failed_cutoff_date
+            processing_status="failed", created_at__lt=failed_cutoff_date,
         ).delete()[0]
 
         logger.info(f"Cleaned up {failed_deleted_count} old failed webhook events")
@@ -207,7 +207,7 @@ def cleanup_old_media_files():
         cutoff_date = timezone.now() - timedelta(days=90)
 
         old_media_files = WhatsAppMediaFile.objects.filter(
-            created_at__lt=cutoff_date, is_downloaded=True
+            created_at__lt=cutoff_date, is_downloaded=True,
         )
 
         deleted_count = 0
@@ -237,7 +237,7 @@ def retry_failed_messages():
         # Get failed messages from the last hour
         cutoff_time = timezone.now() - timedelta(hours=1)
         failed_messages = WhatsAppMessage.objects.filter(
-            status="failed", direction="outbound", failed_at__gt=cutoff_time
+            status="failed", direction="outbound", failed_at__gt=cutoff_time,
         ).select_related("business_account", "contact")
 
         retry_count = 0
@@ -248,7 +248,7 @@ def retry_failed_messages():
 
                 if message.message_type == "text":
                     response = message_service.api.send_text_message(
-                        message.contact.wa_id, message.content
+                        message.contact.wa_id, message.content,
                     )
                 elif message.message_type in ["image", "audio", "video", "document"]:
                     response = message_service.api.send_media_message(
@@ -291,7 +291,7 @@ def update_contact_profiles():
         # Get contacts that haven't been updated in the last 24 hours
         cutoff_time = timezone.now() - timedelta(hours=24)
         contacts_to_update = WhatsAppContact.objects.filter(
-            updated_at__lt=cutoff_time, is_opted_in=True
+            updated_at__lt=cutoff_time, is_opted_in=True,
         ).select_related("business_account")
 
         updated_count = 0

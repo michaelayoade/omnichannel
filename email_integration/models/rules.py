@@ -8,7 +8,7 @@ __all__ = ["EmailRule"]
 
 class EmailRule(models.Model):
     account = models.ForeignKey(
-        EmailAccount, on_delete=models.CASCADE, related_name="rules"
+        EmailAccount, on_delete=models.CASCADE, related_name="rules",
     )
     name = models.CharField(max_length=200)
     rule_type = models.CharField(max_length=20, choices=RuleType.choices)

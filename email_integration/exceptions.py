@@ -1,5 +1,4 @@
-"""
-Custom exceptions for the email integration application.
+"""Custom exceptions for the email integration application.
 
 This module defines a hierarchy of custom exception classes to provide more specific
 and actionable error information throughout the email integration components.

@@ -1,5 +1,4 @@
-"""
-Tests for security and rate limiting middleware.
+"""Tests for security and rate limiting middleware.
 
 This module tests the behavior of middleware components
 for security headers, request ID tracking, content validation, and rate limiting.
@@ -28,7 +27,9 @@ class MiddlewareTestCase(TestCase):
         """Set up test environment."""
         self.factory = RequestFactory()
         self.user = User.objects.create_user(
-            username="testuser", email="user@example.com", password="password123"  # nosec B106
+            username="testuser",
+            email="user@example.com",
+            password="password123",  # nosec B106
         )
 
 
@@ -46,10 +47,10 @@ class SecurityHeadersMiddlewareTest(MiddlewareTestCase):
         response = self.middleware(request)
 
         # Check that security headers were added
-        self.assertEqual(response["X-Content-Type-Options"], "nosniff")
-        self.assertEqual(response["X-XSS-Protection"], "1; mode=block")
-        self.assertEqual(response["X-Frame-Options"], "DENY")
-        self.assertEqual(response["Referrer-Policy"], "strict-origin-when-cross-origin")
+        assert response["X-Content-Type-Options"] == "nosniff"
+        assert response["X-XSS-Protection"] == "1; mode=block"
+        assert response["X-Frame-Options"] == "DENY"
+        assert response["Referrer-Policy"] == "strict-origin-when-cross-origin"
 
     def test_csp_header_in_production(self):
         """Test that CSP header is added in production."""
@@ -59,8 +60,8 @@ class SecurityHeadersMiddlewareTest(MiddlewareTestCase):
             response = self.middleware(request)
 
             # CSP should be present in production
-            self.assertIn("Content-Security-Policy", response)
-            self.assertIn("default-src 'self'", response["Content-Security-Policy"])
+            assert "Content-Security-Policy" in response
+            assert "default-src 'self'" in response["Content-Security-Policy"]
 
     def test_no_csp_header_in_debug(self):
         """Test that CSP header is omitted in debug mode."""
@@ -70,7 +71,7 @@ class SecurityHeadersMiddlewareTest(MiddlewareTestCase):
             response = self.middleware(request)
 
             # CSP should not be present in debug mode
-            self.assertNotIn("Content-Security-Policy", response)
+            assert "Content-Security-Policy" not in response
 
 
 class RequestIDMiddlewareTest(MiddlewareTestCase):
@@ -87,11 +88,11 @@ class RequestIDMiddlewareTest(MiddlewareTestCase):
         response = self.middleware(request)
 
         # Request should have an ID assigned
-        self.assertTrue(hasattr(request, "request_id"))
+        assert hasattr(request, "request_id")
         # Response should include the ID header
-        self.assertIn("X-Request-ID", response)
+        assert "X-Request-ID" in response
         # IDs should match
-        self.assertEqual(request.request_id, response["X-Request-ID"])
+        assert request.request_id == response["X-Request-ID"]
 
     def test_existing_request_id_used(self):
         """Test that an existing request ID is preserved."""
@@ -100,9 +101,9 @@ class RequestIDMiddlewareTest(MiddlewareTestCase):
         response = self.middleware(request)
 
         # Request should have the provided ID
-        self.assertEqual(request.request_id, test_id)
+        assert request.request_id == test_id
         # Response should return the same ID
-        self.assertEqual(response["X-Request-ID"], test_id)
+        assert response["X-Request-ID"] == test_id
 
     @mock.patch("email_integration.middleware.security.logger")
     def test_logging_context(self, mock_logger):
@@ -112,7 +113,7 @@ class RequestIDMiddlewareTest(MiddlewareTestCase):
 
         # Logger should have had context set with request ID
         mock_logger.set_context.assert_called_with(
-            request_id=request.request_id, path=request.path
+            request_id=request.request_id, path=request.path,
         )
 
 
@@ -156,7 +157,7 @@ class ContentValidationMiddlewareTest(MiddlewareTestCase):
             response = self.middleware(request)
 
             # Should return 403 Forbidden
-            self.assertEqual(response.status_code, 403)
+            assert response.status_code == 403
             # Get response should not be called
             self.get_response_mock.assert_not_called()
             self.get_response_mock.reset_mock()
@@ -166,17 +167,17 @@ class ContentValidationMiddlewareTest(MiddlewareTestCase):
         """Test that suspicious content is logged."""
         request = self.factory.post("/", {"xss": "<script>alert('XSS')</script>"})
         request.request_id = "test-id"
-        response = self.middleware(request)
+        self.middleware(request)
 
         # Should log a warning
         mock_logger.warning.assert_called_with(
-            "Suspicious content detected in request", extra=mock.ANY
+            "Suspicious content detected in request", extra=mock.ANY,
         )
 
         # Check that the warning includes useful context
         extra = mock_logger.warning.call_args[1]["extra"]
-        self.assertEqual(extra["request_id"], "test-id")
-        self.assertEqual(extra["method"], "POST")
+        assert extra["request_id"] == "test-id"
+        assert extra["method"] == "POST"
 
 
 class RateLimitMiddlewareTest(MiddlewareTestCase):
@@ -221,7 +222,7 @@ class RateLimitMiddlewareTest(MiddlewareTestCase):
 
             # All responses should be successful
             for response in responses:
-                self.assertEqual(response.status_code, 200)
+                assert response.status_code == 200
 
     def test_anonymous_user_rate_limited(self):
         """Test that anonymous users are rate limited by IP."""
@@ -232,12 +233,12 @@ class RateLimitMiddlewareTest(MiddlewareTestCase):
         # First 5 requests should succeed
         for _ in range(5):
             response = self.middleware(request)
-            self.assertEqual(response.status_code, 200)
+            assert response.status_code == 200
 
         # 6th request should be rate limited
         response = self.middleware(request)
-        self.assertEqual(response.status_code, 429)
-        self.assertIn("Too many requests", str(response.content))
+        assert response.status_code == 429
+        assert "Too many requests" in str(response.content)
 
     def test_authenticated_user_rate_limited(self):
         """Test that authenticated users are rate limited by user ID."""
@@ -247,7 +248,9 @@ class RateLimitMiddlewareTest(MiddlewareTestCase):
 
         # Create a second user with same IP
         user2 = User.objects.create_user(
-            username="testuser2", email="user2@example.com", password="password123"  # nosec B106
+            username="testuser2",
+            email="user2@example.com",
+            password="password123",  # nosec B106
         )
         request2 = self.factory.get("/api/endpoint")
         request2.user = user2
@@ -256,17 +259,17 @@ class RateLimitMiddlewareTest(MiddlewareTestCase):
         # First user makes 5 requests
         for _ in range(5):
             response = self.middleware(request1)
-            self.assertEqual(response.status_code, 200)
+            assert response.status_code == 200
 
         # First user's 6th request is rate limited
         response = self.middleware(request1)
-        self.assertEqual(response.status_code, 429)
+        assert response.status_code == 429
 
         # Second user should still be able to make requests
         # even though they share the same IP
         for _ in range(5):
             response = self.middleware(request2)
-            self.assertEqual(response.status_code, 200)
+            assert response.status_code == 200
 
     def test_rate_limit_window(self):
         """Test that rate limit resets after time window."""
@@ -277,11 +280,11 @@ class RateLimitMiddlewareTest(MiddlewareTestCase):
         # Make 5 requests (should succeed)
         for _ in range(5):
             response = self.middleware(request)
-            self.assertEqual(response.status_code, 200)
+            assert response.status_code == 200
 
         # 6th request (should be limited)
         response = self.middleware(request)
-        self.assertEqual(response.status_code, 429)
+        assert response.status_code == 429
 
         # Wait for rate limit window to expire
         time.sleep(1.1)  # Just over the 1-second window
@@ -289,7 +292,7 @@ class RateLimitMiddlewareTest(MiddlewareTestCase):
         # Should be able to make requests again
         for _ in range(5):
             response = self.middleware(request)
-            self.assertEqual(response.status_code, 200)
+            assert response.status_code == 200
 
     def test_disabled_rate_limit(self):
         """Test behavior when rate limiting is disabled."""
@@ -306,4 +309,4 @@ class RateLimitMiddlewareTest(MiddlewareTestCase):
         # Make many requests (more than the limit)
         for _ in range(20):
             response = self.middleware(request)
-            self.assertEqual(response.status_code, 200)
+            assert response.status_code == 200

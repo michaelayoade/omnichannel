@@ -1,6 +1,4 @@
-"""
-Celery configuration with security best practices for Omnichannel MVP.
-"""
+"""Celery configuration with security best practices for Omnichannel MVP."""
 
 import os
 
@@ -45,7 +43,10 @@ app.conf.update(
     task_reject_on_worker_lost=True,  # Reject tasks when worker terminates
     # Logging
     worker_log_format="%(asctime)s [%(process)d] [%(levelname)s] %(message)s",
-    worker_task_log_format="%(asctime)s [%(process)d] [%(levelname)s] [%(task_name)s(%(task_id)s)] %(message)s",
+    worker_task_log_format=(
+        "%(asctime)s [%(process)d] [%(levelname)s] "
+        "[%(task_name)s(%(task_id)s)] %(message)s"
+    ),
 )
 
 # Define scheduled tasks
@@ -62,4 +63,3 @@ app.conf.beat_schedule = {
 @app.task(bind=True)
 def debug_task(self):
     """Task for debugging Celery setup."""
-    print(f"Request: {self.request!r}")

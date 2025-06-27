@@ -1,5 +1,4 @@
-"""
-Integration tests for API-based email adapters.
+"""Integration tests for API-based email adapters.
 
 These tests verify the behavior of the Gmail and Outlook API adapters
 using mock servers to simulate the actual API responses.
@@ -9,6 +8,7 @@ import base64
 from datetime import datetime
 from unittest import mock
 
+import pytest
 import responses
 from django.test import TestCase
 
@@ -26,7 +26,7 @@ class MockAPITestCase(TestCase):
         """Set up test environment."""
         # Create a test account with mock OAuth2 credentials
         self.account = EmailAccountFactory(
-            email_address="test@example.com", name="Test User"
+            email_address="test@example.com", name="Test User",
         )
 
         # Create mock server settings with OAuth2 configuration
@@ -78,7 +78,7 @@ class GmailAdapterTest(MockAPITestCase):
                     "refresh_token": "mock-refresh-token",
                     "client_id": "mock-client-id",
                     "client_secret": "mock-client-secret",
-                }
+                },
             },
         )
         self.mock_get_credentials = self.credentials_patcher.start()
@@ -118,9 +118,9 @@ class GmailAdapterTest(MockAPITestCase):
         self.adapter.connect()
 
         # Verify the service was created
-        self.assertIsNotNone(self.adapter.service)
+        assert self.adapter.service is not None
         self.mock_build.assert_called_once_with(
-            "gmail", "v1", credentials=mock.ANY, cache_discovery=False
+            "gmail", "v1", credentials=mock.ANY, cache_discovery=False,
         )
 
     @responses.activate
@@ -141,7 +141,7 @@ class GmailAdapterTest(MockAPITestCase):
         self.mock_build.return_value = mock_service
 
         # Connect should raise AuthenticationError
-        with self.assertRaises(AuthenticationError):
+        with pytest.raises(AuthenticationError):
             self.adapter.connect()
 
     @responses.activate
@@ -187,7 +187,7 @@ class GmailAdapterTest(MockAPITestCase):
                 "headers": [
                     {"name": "From", "value": "sender@example.com"},
                     {"name": "Subject", "value": "Test Subject"},
-                ]
+                ],
             },
         }
 
@@ -199,7 +199,7 @@ class GmailAdapterTest(MockAPITestCase):
                 "headers": [
                     {"name": "From", "value": "other@example.com"},
                     {"name": "Subject", "value": "Another Test"},
-                ]
+                ],
             },
         }
 
@@ -208,7 +208,6 @@ class GmailAdapterTest(MockAPITestCase):
         mock_users = mock.MagicMock()
         mock_messages = mock.MagicMock()
         mock_list = mock.MagicMock()
-        mock_get = mock.MagicMock()
 
         # Configure list call
         mock_list.execute.return_value = mock_list_response
@@ -243,9 +242,9 @@ class GmailAdapterTest(MockAPITestCase):
         messages = self.adapter.fetch_messages(limit=2)
 
         # Verify results
-        self.assertEqual(len(messages), 2)
-        self.assertEqual(messages[0]["external_id"], "msg1")
-        self.assertEqual(messages[1]["external_id"], "msg2")
+        assert len(messages) == 2
+        assert messages[0]["external_id"] == "msg1"
+        assert messages[1]["external_id"] == "msg2"
 
         # Verify API was called correctly
         mock_messages.list.assert_called_once_with(userId="me", q="", maxResults=2)
@@ -279,11 +278,11 @@ class GmailAdapterTest(MockAPITestCase):
         since_date = datetime(2023, 3, 15)
 
         # Fetch messages
-        messages = self.adapter.fetch_messages(since_date=since_date)
+        self.adapter.fetch_messages(since_date=since_date)
 
         # Verify date filter was applied correctly
         mock_messages.list.assert_called_once_with(
-            userId="me", q="after:2023/03/15", maxResults=mock.ANY
+            userId="me", q="after:2023/03/15", maxResults=mock.ANY,
         )
 
 
@@ -320,7 +319,7 @@ class OutlookAdapterTest(MockAPITestCase):
                     "client_id": "mock-client-id",
                     "client_secret": "mock-client-secret",
                     "tenant_id": "common",
-                }
+                },
             },
         )
         self.mock_get_credentials = self.credentials_patcher.start()
@@ -358,8 +357,8 @@ class OutlookAdapterTest(MockAPITestCase):
         self.adapter.connect()
 
         # Verify a token was obtained
-        self.assertIsNotNone(self.adapter.token)
-        self.assertTrue("access_token" in self.adapter.token)
+        assert self.adapter.token is not None
+        assert "access_token" in self.adapter.token
 
     @responses.activate
     def test_connect_auth_error(self):
@@ -372,13 +371,13 @@ class OutlookAdapterTest(MockAPITestCase):
                 "error": {
                     "code": "InvalidAuthenticationToken",
                     "message": "Access token is invalid",
-                }
+                },
             },
             status=401,
         )
 
         # Connect should raise AuthenticationError
-        with self.assertRaises(AuthenticationError):
+        with pytest.raises(AuthenticationError):
             self.adapter.connect()
 
     @responses.activate
@@ -400,10 +399,10 @@ class OutlookAdapterTest(MockAPITestCase):
             "receivedDateTime": "2023-03-21T12:00:00Z",
             "internetMessageId": "<msg1@example.com>",
             "from": {
-                "emailAddress": {"address": "sender@example.com", "name": "Sender Name"}
+                "emailAddress": {"address": "sender@example.com", "name": "Sender Name"},
             },
             "toRecipients": [
-                {"emailAddress": {"address": "test@example.com", "name": "Test User"}}
+                {"emailAddress": {"address": "test@example.com", "name": "Test User"}},
             ],
             "ccRecipients": [],
             "body": {
@@ -420,10 +419,10 @@ class OutlookAdapterTest(MockAPITestCase):
             "receivedDateTime": "2023-03-22T14:00:00Z",
             "internetMessageId": "<msg2@example.com>",
             "from": {
-                "emailAddress": {"address": "other@example.com", "name": "Other Sender"}
+                "emailAddress": {"address": "other@example.com", "name": "Other Sender"},
             },
             "toRecipients": [
-                {"emailAddress": {"address": "test@example.com", "name": "Test User"}}
+                {"emailAddress": {"address": "test@example.com", "name": "Test User"}},
             ],
             "ccRecipients": [],
             "body": {"contentType": "text", "content": "This is another test message."},
@@ -444,12 +443,12 @@ class OutlookAdapterTest(MockAPITestCase):
         messages = self.adapter.fetch_messages(limit=20)
 
         # Verify results
-        self.assertEqual(len(messages), 2)
-        self.assertEqual(messages[0]["external_id"], "msg1")
-        self.assertEqual(messages[0]["subject"], "Test Subject")
-        self.assertEqual(messages[0]["from_email"], "sender@example.com")
-        self.assertEqual(messages[1]["external_id"], "msg2")
-        self.assertEqual(messages[1]["subject"], "Another Test")
+        assert len(messages) == 2
+        assert messages[0]["external_id"] == "msg1"
+        assert messages[0]["subject"] == "Test Subject"
+        assert messages[0]["from_email"] == "sender@example.com"
+        assert messages[1]["external_id"] == "msg2"
+        assert messages[1]["subject"] == "Another Test"
 
     @responses.activate
     def test_fetch_with_attachments(self):
@@ -470,10 +469,10 @@ class OutlookAdapterTest(MockAPITestCase):
             "receivedDateTime": "2023-03-23T10:00:00Z",
             "internetMessageId": "<msg3@example.com>",
             "from": {
-                "emailAddress": {"address": "sender@example.com", "name": "Sender"}
+                "emailAddress": {"address": "sender@example.com", "name": "Sender"},
             },
             "toRecipients": [
-                {"emailAddress": {"address": "test@example.com", "name": "Test User"}}
+                {"emailAddress": {"address": "test@example.com", "name": "Test User"}},
             ],
             "body": {
                 "contentType": "html",
@@ -514,10 +513,10 @@ class OutlookAdapterTest(MockAPITestCase):
         messages = self.adapter.fetch_messages(limit=1)
 
         # Verify results
-        self.assertEqual(len(messages), 1)
-        self.assertEqual(messages[0]["external_id"], "msg3")
+        assert len(messages) == 1
+        assert messages[0]["external_id"] == "msg3"
 
         # Verify attachment was processed
-        self.assertTrue(len(messages[0]["attachments"]) > 0)
-        self.assertEqual(messages[0]["attachments"][0].name, "test.pdf")
-        self.assertEqual(messages[0]["attachments"][0].content_type, "application/pdf")
+        assert len(messages[0]["attachments"]) > 0
+        assert messages[0]["attachments"][0].name == "test.pdf"
+        assert messages[0]["attachments"][0].content_type == "application/pdf"

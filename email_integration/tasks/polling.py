@@ -11,12 +11,11 @@ logger = ContextLogger(__name__)
 
 
 @shared_task(
-    bind=True, max_retries=config.MAX_RETRIES, default_retry_delay=config.RETRY_DELAY
+    bind=True, max_retries=config.MAX_RETRIES, default_retry_delay=config.RETRY_DELAY,
 )
 @with_request_id
 def poll_email_account(self, account_id: int, _request_id=None):
-    """
-    Celery task to poll a specific email account for new messages.
+    """Celery task to poll a specific email account for new messages.
     This task is a thin wrapper around the `poll_and_process_account` service.
     It handles transient connection errors with retries.
     """
@@ -75,9 +74,9 @@ def poll_all_email_accounts(_request_id=None):
 
     # Use select_related to optimize database queries
     accounts = EmailAccount.objects.filter(
-        status=AccountStatus.ACTIVE, auto_polling_enabled=True
+        status=AccountStatus.ACTIVE, auto_polling_enabled=True,
     ).select_related(
-        "organization"
+        "organization",
     )  # Add any other related fields needed
 
     account_count = accounts.count()
@@ -123,7 +122,7 @@ def poll_all_email_accounts(_request_id=None):
                         "email_address": account.email_address,
                         "task_id": result.id,
                         "scheduled_at": timezone.now().isoformat(),
-                    }
+                    },
                 )
         except Exception as e:
             errors += 1

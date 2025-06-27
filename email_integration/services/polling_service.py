@@ -1,5 +1,4 @@
-"""
-Polling service for email integration.
+"""Polling service for email integration.
 
 This module handles all operations related to polling email accounts:
 - Fetching messages from email servers
@@ -27,23 +26,26 @@ class PollingService(BaseService):
 
     @with_request_id
     def poll_and_process_account(self, account_id, _request_id=None):
-        """
-        Poll an email account and process incoming messages.
+        """Poll an email account and process incoming messages.
 
         Args:
+        ----
             account_id: ID of the account to poll
             _request_id: Optional request ID for logging
 
         Returns:
+        -------
             Dictionary with poll results
 
         Raises:
+        ------
             ConnectionError: If connection to email server fails
             AuthenticationError: If authentication fails
+
         """
         # Set up logging context
         logger.set_context(
-            request_id=_request_id, account_id=account_id, action="poll_account"
+            request_id=_request_id, account_id=account_id, action="poll_account",
         )
 
         start_time = timezone.now()
@@ -121,15 +123,17 @@ class PollingService(BaseService):
 
     @transaction.atomic
     def process_message(self, account, message_data):
-        """
-        Process a single email message.
+        """Process a single email message.
 
         Args:
+        ----
             account: EmailAccount instance
             message_data: Dictionary with message data from adapter
 
         Returns:
+        -------
             Processed EmailMessage instance
+
         """
         # Check if message already exists to avoid duplicates
         message_id = message_data.get("message_id")
@@ -163,12 +167,13 @@ class PollingService(BaseService):
         return email_message
 
     def _update_account_status(self, account, status):
-        """
-        Update account status and last poll time.
+        """Update account status and last poll time.
 
         Args:
+        ----
             account: EmailAccount instance
             status: New status value
+
         """
         account.status = status
         account.last_poll_at = timezone.now()
@@ -180,12 +185,13 @@ class PollingService(BaseService):
         )
 
     def _apply_rules(self, account, message):
-        """
-        Apply account rules to an incoming message.
+        """Apply account rules to an incoming message.
 
         Args:
+        ----
             account: EmailAccount instance
             message: EmailMessage instance
+
         """
         # Get account rules ordered by priority
         rules = account.rules.filter(is_active=True).order_by("priority")
@@ -219,15 +225,17 @@ class PollingService(BaseService):
                 )
 
     def _rule_matches(self, rule, message):
-        """
-        Check if a rule's conditions match a message.
+        """Check if a rule's conditions match a message.
 
         Args:
+        ----
             rule: Rule instance
             message: EmailMessage instance
 
         Returns:
+        -------
             Boolean indicating if rule matches
+
         """
         conditions = rule.conditions or {}
 
@@ -247,19 +255,19 @@ class PollingService(BaseService):
                 return False
 
         # Check has attachments
-        if conditions.get("has_attachment"):
-            if not message.attachments:
-                return False
+        if conditions.get("has_attachment") and not message.attachments:
+            return False
 
         return True
 
     def _execute_rule_action(self, rule, message):
-        """
-        Execute a rule's action on a message.
+        """Execute a rule's action on a message.
 
         Args:
+        ----
             rule: Rule instance
             message: EmailMessage instance
+
         """
         from ..enums import RuleAction
 
@@ -289,31 +297,35 @@ class PollingService(BaseService):
 
 # Convenience functions that use the service
 def poll_and_process_account(account_id, request=None):
-    """
-    Poll an email account and process incoming messages.
+    """Poll an email account and process incoming messages.
 
     Args:
+    ----
         account_id: ID of the account to poll
         request: Optional request object
 
     Returns:
+    -------
         Dictionary with poll results
+
     """
     service = PollingService(request)
     return service.poll_and_process_account(account_id)
 
 
 def process_message(account, message_data, request=None):
-    """
-    Process a single email message.
+    """Process a single email message.
 
     Args:
+    ----
         account: EmailAccount instance
         message_data: Dictionary with message data
         request: Optional request object
 
     Returns:
+    -------
         Processed EmailMessage instance
+
     """
     service = PollingService(request)
     return service.process_message(account, message_data)

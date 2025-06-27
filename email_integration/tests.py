@@ -1,5 +1,6 @@
 from unittest.mock import MagicMock, patch
 
+import pytest
 from django.test import TestCase
 from django.utils import timezone
 
@@ -46,36 +47,36 @@ class RulesEngineTestCase(TestCase):
     def test_rule_matches_from_contains(self):
         """Verify 'from_contains' condition matches correctly."""
         rule = EmailRule(condition_type="from_contains", condition_value="sender@")
-        self.assertTrue(rule_matches(rule, self.message))
+        assert rule_matches(rule, self.message)
         rule.condition_value = "nonexistent@"
-        self.assertFalse(rule_matches(rule, self.message))
+        assert not rule_matches(rule, self.message)
 
     def test_rule_matches_from_equals_case_insensitive(self):
         """Verify 'from_equals' condition is case-insensitive."""
         rule = EmailRule(
-            condition_type="from_equals", condition_value="SENDER@DOMAIN.COM"
+            condition_type="from_equals", condition_value="SENDER@DOMAIN.COM",
         )
-        self.assertTrue(rule_matches(rule, self.message))
+        assert rule_matches(rule, self.message)
         rule.condition_value = "sender@domain.com.uk"
-        self.assertFalse(rule_matches(rule, self.message))
+        assert not rule_matches(rule, self.message)
 
     def test_rule_matches_subject_contains(self):
         """Verify 'subject_contains' condition matches correctly."""
         rule = EmailRule(
-            condition_type="subject_contains", condition_value="important news"
+            condition_type="subject_contains", condition_value="important news",
         )
-        self.assertTrue(rule_matches(rule, self.message))
+        assert rule_matches(rule, self.message)
 
     def test_rule_matches_body_contains(self):
         """Verify 'body_contains' condition matches correctly."""
         rule = EmailRule(condition_type="body_contains", condition_value="test email")
-        self.assertTrue(rule_matches(rule, self.message))
+        assert rule_matches(rule, self.message)
 
     def test_rule_matches_has_attachment(self):
         """Verify 'has_attachment' condition is based on attachment existence."""
         rule = EmailRule(condition_type="has_attachment")
         # Message should initially have no attachments
-        self.assertFalse(rule_matches(rule, self.message))
+        assert not rule_matches(rule, self.message)
 
         # Create an attachment and re-check
         EmailAttachment.objects.create(
@@ -85,19 +86,19 @@ class RulesEngineTestCase(TestCase):
             size=1024,
             file_path="attachments/test_file.pdf",
         )
-        self.assertTrue(rule_matches(rule, self.message))
+        assert rule_matches(rule, self.message)
 
     def test_rule_matches_domain_equals(self):
         """Verify 'domain_equals' condition matches correctly."""
         rule = EmailRule(condition_type="domain_equals", condition_value="domain.com")
-        self.assertTrue(rule_matches(rule, self.message))
+        assert rule_matches(rule, self.message)
         rule.condition_value = "another-domain.com"
-        self.assertFalse(rule_matches(rule, self.message))
+        assert not rule_matches(rule, self.message)
 
     def test_execute_rule_auto_reply(self):
         """Verify 'auto_reply' action calls the send method on the adapter."""
         rule = EmailRule(
-            rule_type="auto_reply", action_data={"template_id": self.template.id}
+            rule_type="auto_reply", action_data={"template_id": self.template.id},
         )
         execute_rule(self.mock_adapter, rule, self.message)
         self.mock_adapter.send.assert_called_once()
@@ -105,18 +106,18 @@ class RulesEngineTestCase(TestCase):
     def test_execute_rule_forward(self):
         """Verify 'forward' action calls the send_forward method on the adapter."""
         rule = EmailRule(
-            rule_type="forward", action_data={"forward_to": ["admin@example.com"]}
+            rule_type="forward", action_data={"forward_to": ["admin@example.com"]},
         )
         execute_rule(self.mock_adapter, rule, self.message)
         self.mock_adapter.send.assert_called_once()
 
     def test_execute_rule_set_priority(self):
         """Verify 'priority' action changes the message priority."""
-        self.assertEqual(self.message.priority, "normal")
+        assert self.message.priority == "normal"
         rule = EmailRule(rule_type="priority", action_data={"priority": "high"})
         execute_rule(self.mock_adapter, rule, self.message)
         self.message.refresh_from_db()
-        self.assertEqual(self.message.priority, "high")
+        assert self.message.priority == "high"
 
     @patch("email_integration.rules_engine.logger")
     def test_execute_rule_unknown_type(self, mock_logger):
@@ -124,7 +125,7 @@ class RulesEngineTestCase(TestCase):
         rule = EmailRule(rule_type="non_existent_action")
         execute_rule(self.mock_adapter, rule, self.message)
         mock_logger.warning.assert_called_once_with(
-            "No handler for rule_type '%s'", "non_existent_action"
+            "No handler for rule_type '%s'", "non_existent_action",
         )
 
     @patch("email_integration.rules_engine.logger")
@@ -133,7 +134,7 @@ class RulesEngineTestCase(TestCase):
         self.mock_adapter.send.side_effect = Exception("SMTP Service is down")
 
         rule = EmailRule(
-            rule_type="auto_reply", action_data={"template_id": self.template.id}
+            rule_type="auto_reply", action_data={"template_id": self.template.id},
         )
         execute_rule(self.mock_adapter, rule, self.message)
 
@@ -142,7 +143,7 @@ class RulesEngineTestCase(TestCase):
         # The call is logger.exception(msg, rule.id, message.id, exc).
         # We need to check the exception object, which is the 4th element (index 3).
         logged_exception = mock_logger.exception.call_args.args[3]
-        self.assertIn("SMTP Service is down", str(logged_exception))
+        assert "SMTP Service is down" in str(logged_exception)
 
 
 class EmailIntegrationServiceTests(TestCase):
@@ -151,7 +152,8 @@ class EmailIntegrationServiceTests(TestCase):
             email_address="polltest@example.com",
             status=AccountStatus.ACTIVE,
             auto_polling_enabled=True,
-            inbound_channel="IMAPService",  # Assuming IMAPService is a valid adapter key
+            inbound_channel="IMAPService",
+            # Assuming IMAPService is a valid adapter key
         )
 
     @patch("email_integration.services.get_adapter")
@@ -159,14 +161,14 @@ class EmailIntegrationServiceTests(TestCase):
         """Test successful polling of an email account."""
         mock_adapter = MagicMock(spec=BaseInboundAdapter)
         mock_adapter.poll.return_value = MagicMock(
-            messages_processed=5, messages_failed=0, status="success"
+            messages_processed=5, messages_failed=0, status="success",
         )
         mock_get_adapter.return_value = mock_adapter
 
         result = services.poll_and_process_account(self.account.id)
 
-        self.assertEqual(result["status"], "success")
-        self.assertEqual(result["messages_processed"], 5)
+        assert result["status"] == "success"
+        assert result["messages_processed"] == 5
         mock_get_adapter.assert_called_once_with("IMAPService", self.account)
         mock_adapter.poll.assert_called_once()
 
@@ -179,10 +181,10 @@ class EmailIntegrationServiceTests(TestCase):
 
         result = services.poll_and_process_account(self.account.id)
 
-        self.assertEqual(result["status"], "authentication_error")
+        assert result["status"] == "authentication_error"
         self.account.refresh_from_db()
-        self.assertEqual(self.account.status, AccountStatus.INACTIVE)
-        self.assertIn("Authentication failed", self.account.last_error_message)
+        assert self.account.status == AccountStatus.INACTIVE
+        assert "Authentication failed" in self.account.last_error_message
 
     @patch("email_integration.services.get_adapter")
     def test_poll_and_process_account_connection_error(self, mock_get_adapter):
@@ -191,10 +193,10 @@ class EmailIntegrationServiceTests(TestCase):
         mock_adapter.poll.side_effect = ConnectionError("Could not connect to server")
         mock_get_adapter.return_value = mock_adapter
 
-        with self.assertRaises(ConnectionError):
+        with pytest.raises(ConnectionError):
             services.poll_and_process_account(self.account.id)
 
     def test_poll_and_process_non_existent_account(self):
         """Test polling a non-existent account raises DoesNotExist."""
-        with self.assertRaises(EmailAccount.DoesNotExist):
+        with pytest.raises(EmailAccount.DoesNotExist):
             services.poll_and_process_account(99999)  # An ID that does not exist

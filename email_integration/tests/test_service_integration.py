@@ -1,5 +1,4 @@
-"""
-Integration tests for email service layer.
+"""Integration tests for email service layer.
 Tests the interaction between adapters, services, and tasks.
 """
 
@@ -7,6 +6,7 @@ import tempfile
 from datetime import datetime, timedelta
 from unittest.mock import MagicMock, patch
 
+import pytest
 from django.test import TestCase, override_settings
 from django.utils import timezone
 
@@ -95,7 +95,7 @@ class TestEmailServiceIntegration(TestCase):
                     "content": b"test pdf content",
                     "content_type": "application/pdf",
                     "size": 15,
-                }
+                },
             ],
         }
 
@@ -103,27 +103,27 @@ class TestEmailServiceIntegration(TestCase):
 
         # Execute the task that would normally be called by Celery
         with patch(
-            "email_integration.channels.adapters.factory.get_adapter_for_account"
+            "email_integration.channels.adapters.factory.get_adapter_for_account",
         ) as mock_get_adapter:
             mock_get_adapter.return_value = mock_adapter
             poll_email_account(self.pop3_account.id)
 
         # Verify email was saved to database
-        self.assertEqual(EmailMessage.objects.count(), 1)
+        assert EmailMessage.objects.count() == 1
         saved_email = EmailMessage.objects.first()
-        self.assertEqual(saved_email.subject, "Need support with my account")
-        self.assertEqual(saved_email.sender, "customer@example.com")
+        assert saved_email.subject == "Need support with my account"
+        assert saved_email.sender == "customer@example.com"
 
         # Verify attachment was saved
-        self.assertEqual(Attachment.objects.count(), 1)
+        assert Attachment.objects.count() == 1
         attachment = Attachment.objects.first()
-        self.assertEqual(attachment.filename, "test.pdf")
-        self.assertEqual(attachment.content_type, "application/pdf")
-        self.assertEqual(attachment.message, saved_email)
+        assert attachment.filename == "test.pdf"
+        assert attachment.content_type == "application/pdf"
+        assert attachment.message == saved_email
 
         # Verify rule was applied
-        self.assertTrue(saved_email.tags.filter(name="support").exists())
-        self.assertTrue(saved_email.tags.filter(name="customer-inquiry").exists())
+        assert saved_email.tags.filter(name="support").exists()
+        assert saved_email.tags.filter(name="customer-inquiry").exists()
 
     @patch("email_integration.services.email_sender.EmailSender.send")
     @patch("email_integration.channels.adapters.smtp.SMTPEmailAdapter")
@@ -142,7 +142,7 @@ class TestEmailServiceIntegration(TestCase):
 
         # Apply rules to the message
         with patch(
-            "email_integration.channels.adapters.factory.get_adapter_for_account"
+            "email_integration.channels.adapters.factory.get_adapter_for_account",
         ) as mock_get_adapter:
             mock_get_adapter.return_value = mock_smtp_adapter
             self.rule_engine.process_message(message)
@@ -150,13 +150,13 @@ class TestEmailServiceIntegration(TestCase):
         # Verify the message was forwarded
         mock_send.assert_called_once()
         args, kwargs = mock_send.call_args
-        self.assertEqual(kwargs["to"], ["support@company.com"])
-        self.assertTrue("forward" in kwargs["subject"].lower())
+        assert kwargs["to"] == ["support@company.com"]
+        assert "forward" in kwargs["subject"].lower()
 
     @patch("email_integration.channels.adapters.gmail_api.GmailAPIAdapter")
     @patch("email_integration.channels.adapters.factory.get_adapter_for_account")
     def test_api_adapter_message_handling(
-        self, mock_get_adapter, mock_gmail_adapter_class
+        self, mock_get_adapter, mock_gmail_adapter_class,
     ):
         """Test that API-based adapters correctly handle messages."""
         mock_gmail_adapter = MagicMock()
@@ -184,12 +184,12 @@ class TestEmailServiceIntegration(TestCase):
 
         # Verify the message was stored
         messages = EmailMessage.objects.filter(account=self.gmail_account)
-        self.assertEqual(messages.count(), 1)
-        self.assertEqual(messages[0].subject, "API Test Email")
-        self.assertEqual(messages[0].provider_data.get("thread_id"), "thread_123")
+        assert messages.count() == 1
+        assert messages[0].subject == "API Test Email"
+        assert messages[0].provider_data.get("thread_id") == "thread_123"
 
         # Verify metadata was preserved
-        self.assertEqual(messages[0].provider_data.get("labels"), ["INBOX", "UNREAD"])
+        assert messages[0].provider_data.get("labels") == ["INBOX", "UNREAD"]
 
     @patch("email_integration.channels.adapters.factory.get_adapter_for_account")
     def test_error_handling_and_retry(self, mock_get_adapter):
@@ -202,7 +202,7 @@ class TestEmailServiceIntegration(TestCase):
 
         # Call the polling task directly - no retry in tests but should log error
         with patch("email_integration.tasks.polling.logger.error") as mock_logger:
-            with self.assertRaises(ConnectionError):
+            with pytest.raises(ConnectionError):
                 poll_email_account(self.pop3_account.id)
 
             # Verify the error was logged
@@ -232,7 +232,7 @@ class TestEmailServiceIntegration(TestCase):
                     "content": test_content,
                     "content_type": "application/pdf",
                     "size": len(test_content),
-                }
+                },
             ],
         }
 
@@ -240,24 +240,24 @@ class TestEmailServiceIntegration(TestCase):
 
         # Process the email
         with patch(
-            "email_integration.channels.adapters.factory.get_adapter_for_account"
+            "email_integration.channels.adapters.factory.get_adapter_for_account",
         ) as mock_get_adapter:
             mock_get_adapter.return_value = mock_adapter
             poll_email_account(self.pop3_account.id)
 
         # Verify attachment
         message = EmailMessage.objects.get(subject="Email with attachment")
-        self.assertEqual(message.attachments.count(), 1)
+        assert message.attachments.count() == 1
 
         attachment = message.attachments.first()
-        self.assertEqual(attachment.filename, "document.pdf")
-        self.assertEqual(attachment.content_type, "application/pdf")
+        assert attachment.filename == "document.pdf"
+        assert attachment.content_type == "application/pdf"
 
         # Verify file storage
         with open(attachment.file.path, "rb") as f:
             stored_content = f.read()
 
-        self.assertEqual(stored_content, test_content)
+        assert stored_content == test_content
 
     @patch("email_integration.services.rule_engine.RuleEngine.process_message")
     @patch("email_integration.channels.adapters.pop3.POP3EmailAdapter")
@@ -281,16 +281,16 @@ class TestEmailServiceIntegration(TestCase):
 
         # Process the email through the polling task
         with patch(
-            "email_integration.channels.adapters.factory.get_adapter_for_account"
+            "email_integration.channels.adapters.factory.get_adapter_for_account",
         ) as mock_get_adapter:
             mock_get_adapter.return_value = mock_adapter
             poll_email_account(self.pop3_account.id)
 
         # Verify the message was processed
         message = EmailMessage.objects.filter(subject="Test Pipeline").first()
-        self.assertIsNotNone(message)
+        assert message is not None
 
         # Verify rule engine was called
         mock_process_message.assert_called_once()
         args = mock_process_message.call_args[0]
-        self.assertEqual(args[0].id, message.id)
+        assert args[0].id == message.id

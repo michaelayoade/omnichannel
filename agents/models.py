@@ -23,7 +23,7 @@ class Agent(models.Model):
     phone = models.CharField(max_length=20, blank=True)
     role = models.CharField(max_length=20, choices=AGENT_ROLE_CHOICES, default="agent")
     status = models.CharField(
-        max_length=20, choices=AGENT_STATUS_CHOICES, default="offline"
+        max_length=20, choices=AGENT_STATUS_CHOICES, default="offline",
     )
     is_active = models.BooleanField(default=True)
     max_concurrent_conversations = models.IntegerField(default=5)
@@ -76,7 +76,7 @@ class AgentAvailability(models.Model):
     ]
 
     agent = models.ForeignKey(
-        Agent, on_delete=models.CASCADE, related_name="availability"
+        Agent, on_delete=models.CASCADE, related_name="availability",
     )
     weekday = models.IntegerField(choices=WEEKDAY_CHOICES)
     start_time = models.TimeField()
@@ -88,4 +88,7 @@ class AgentAvailability(models.Model):
         unique_together = ["agent", "weekday", "start_time"]
 
     def __str__(self):
-        return f"{self.agent.display_name} - {self.get_weekday_display()} {self.start_time}-{self.end_time}"
+        return (
+            f"{self.agent.display_name} - {self.get_weekday_display()} "
+            f"{self.start_time}-{self.end_time}"
+        )

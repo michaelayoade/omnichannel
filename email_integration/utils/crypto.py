@@ -1,5 +1,4 @@
-"""
-Cryptography utilities for email integration.
+"""Cryptography utilities for email integration.
 
 This module provides tools for encrypting and decrypting sensitive data
 such as email credentials with proper key management.
@@ -20,8 +19,7 @@ logger = ContextLogger(__name__)
 
 
 class FieldEncryption:
-    """
-    Utility class for field-level encryption of sensitive data.
+    """Utility class for field-level encryption of sensitive data.
 
     This implementation uses Fernet symmetric encryption with key
     derivation from an environment variable.
@@ -29,14 +27,15 @@ class FieldEncryption:
 
     @classmethod
     def _get_key(cls):
-        """
-        Get or generate the encryption key.
+        """Get or generate the encryption key.
 
         This method derives a secure key using PBKDF2HMAC from the
         ENCRYPTION_KEY and ENCRYPTION_SALT environment variables.
 
-        Returns:
+        Returns
+        -------
             Fernet key for encryption/decryption
+
         """
         if not ENCRYPTION_KEY:
             logger.warning("No encryption key configured, using insecure default")
@@ -60,19 +59,20 @@ class FieldEncryption:
             iterations=100000,
         )
 
-        derived_key = base64.urlsafe_b64encode(kdf.derive(key))
-        return derived_key
+        return base64.urlsafe_b64encode(kdf.derive(key))
 
     @classmethod
     def encrypt(cls, value):
-        """
-        Encrypt a sensitive value.
+        """Encrypt a sensitive value.
 
         Args:
+        ----
             value: String value to encrypt
 
         Returns:
+        -------
             Base64-encoded encrypted data
+
         """
         if not value:
             return None
@@ -91,20 +91,22 @@ class FieldEncryption:
             # Return base64 string
             return base64.urlsafe_b64encode(encrypted).decode("utf-8")
         except Exception as e:
-            logger.error(f"Encryption failed: {str(e)}")
+            logger.error(f"Encryption failed: {e!s}")
             # Return None on failure instead of exposing plain value
             return None
 
     @classmethod
     def decrypt(cls, encrypted_value):
-        """
-        Decrypt an encrypted value.
+        """Decrypt an encrypted value.
 
         Args:
+        ----
             encrypted_value: Encrypted string to decrypt
 
         Returns:
+        -------
             Original string or None if decryption fails
+
         """
         if not encrypted_value:
             return None
@@ -122,31 +124,35 @@ class FieldEncryption:
             # Return as string
             return decrypted.decode("utf-8")
         except Exception as e:
-            logger.error(f"Decryption failed: {str(e)}")
+            logger.error(f"Decryption failed: {e!s}")
             return None
 
 
 def encrypt_value(value):
-    """
-    Convenience function to encrypt a value.
+    """Convenience function to encrypt a value.
 
     Args:
+    ----
         value: String value to encrypt
 
     Returns:
+    -------
         Encrypted string
+
     """
     return FieldEncryption.encrypt(value)
 
 
 def decrypt_value(encrypted_value):
-    """
-    Convenience function to decrypt a value.
+    """Convenience function to decrypt a value.
 
     Args:
+    ----
         encrypted_value: Encrypted string
 
     Returns:
+    -------
         Original string or None
+
     """
     return FieldEncryption.decrypt(encrypted_value)

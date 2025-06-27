@@ -10,7 +10,7 @@ class ConversationConsumer(AsyncWebsocketConsumer):
 
         # Join conversation group
         await self.channel_layer.group_add(
-            self.conversation_group_name, self.channel_name
+            self.conversation_group_name, self.channel_name,
         )
 
         await self.accept()
@@ -18,7 +18,7 @@ class ConversationConsumer(AsyncWebsocketConsumer):
     async def disconnect(self, close_code):
         # Leave conversation group
         await self.channel_layer.group_discard(
-            self.conversation_group_name, self.channel_name
+            self.conversation_group_name, self.channel_name,
         )
 
     # Receive message from WebSocket
@@ -28,7 +28,7 @@ class ConversationConsumer(AsyncWebsocketConsumer):
 
         # Send message to conversation group
         await self.channel_layer.group_send(
-            self.conversation_group_name, {"type": "chat_message", "message": message}
+            self.conversation_group_name, {"type": "chat_message", "message": message},
         )
 
     # Receive message from conversation group
@@ -40,9 +40,7 @@ class ConversationConsumer(AsyncWebsocketConsumer):
 
 
 class AgentStatusConsumer(AsyncWebsocketConsumer):
-    """
-    Handles WebSocket connections for real-time agent status updates.
-    """
+    """Handles WebSocket connections for real-time agent status updates."""
 
     async def connect(self):
         self.user = self.scope.get("user")
@@ -80,9 +78,8 @@ class AgentStatusConsumer(AsyncWebsocketConsumer):
         await self.channel_layer.group_discard(self.group_name, self.channel_name)
 
     async def receive(self, text_data):
-        """
-        Receives status updates from the agent.
-        e.g., {'status': 'away'}
+        """Receives status updates from the agent.
+        e.g., {'status': 'away'}.
         """
         data = json.loads(text_data)
         status = data.get("status")
@@ -93,20 +90,16 @@ class AgentStatusConsumer(AsyncWebsocketConsumer):
             )
 
     async def agent_update(self, event):
-        """
-        Sends agent status updates to the WebSocket.
-        """
+        """Sends agent status updates to the WebSocket."""
         await self.send(
             text_data=json.dumps(
-                {"agent_id": event["agent_id"], "status": event["status"]}
-            )
+                {"agent_id": event["agent_id"], "status": event["status"]},
+            ),
         )
 
 
 class NotificationConsumer(AsyncWebsocketConsumer):
-    """
-    Handles WebSocket connections for sending notifications to agents.
-    """
+    """Handles WebSocket connections for sending notifications to agents."""
 
     async def connect(self):
         self.user = self.scope.get("user")
@@ -133,14 +126,12 @@ class NotificationConsumer(AsyncWebsocketConsumer):
         await self.channel_layer.group_discard(self.group_name, self.channel_name)
 
     async def send_notification(self, event):
-        """
-        Sends a notification to the agent.
-        """
+        """Sends a notification to the agent."""
         await self.send(
             text_data=json.dumps(
                 {
                     "type": event.get("notification_type"),
                     "payload": event.get("payload"),
-                }
-            )
+                },
+            ),
         )

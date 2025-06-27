@@ -1,5 +1,4 @@
-"""
-Utility functions for email integration channels.
+"""Utility functions for email integration channels.
 
 This module provides reusable utility functions for email operations
 including data encoding/decoding, hashing, and string manipulation.
@@ -9,18 +8,19 @@ import base64
 import hashlib
 import re
 import uuid
-from typing import Dict, List
 
 
 def encode_attachment(content: bytes) -> str:
-    """
-    Encode binary attachment content to base64 string.
+    """Encode binary attachment content to base64 string.
 
     Args:
+    ----
         content: Binary attachment data
 
     Returns:
+    -------
         Base64-encoded content string
+
     """
     if not content:
         return ""
@@ -28,14 +28,16 @@ def encode_attachment(content: bytes) -> str:
 
 
 def decode_attachment(encoded_content: str) -> bytes:
-    """
-    Decode base64 attachment content to binary.
+    """Decode base64 attachment content to binary.
 
     Args:
+    ----
         encoded_content: Base64-encoded content string
 
     Returns:
+    -------
         Binary attachment data
+
     """
     if not encoded_content:
         return b""
@@ -43,14 +45,16 @@ def decode_attachment(encoded_content: str) -> bytes:
 
 
 def hash_string(value: str) -> str:
-    """
-    Create a deterministic hash from a string.
+    """Create a deterministic hash from a string.
 
     Args:
+    ----
         value: String to hash
 
     Returns:
+    -------
         Hex digest of SHA-256 hash
+
     """
     if not value:
         return ""
@@ -58,24 +62,27 @@ def hash_string(value: str) -> str:
 
 
 def generate_id() -> str:
-    """
-    Generate a unique ID string.
+    """Generate a unique ID string.
 
-    Returns:
+    Returns
+    -------
         Unique ID string
+
     """
     return str(uuid.uuid4())
 
 
 def extract_email_address(full_address: str) -> str:
-    """
-    Extract email address from a full address string.
+    """Extract email address from a full address string.
 
     Args:
+    ----
         full_address: Full address string (e.g. "Name <email@example.com>")
 
     Returns:
+    -------
         Email address only
+
     """
     if not full_address:
         return ""
@@ -89,15 +96,17 @@ def extract_email_address(full_address: str) -> str:
     return full_address.strip()
 
 
-def parse_address_list(address_string: str) -> List[Dict[str, str]]:
-    """
-    Parse a comma-separated list of email addresses.
+def parse_address_list(address_string: str) -> list[dict[str, str]]:
+    """Parse a comma-separated list of email addresses.
 
     Args:
+    ----
         address_string: String with one or more addresses
 
     Returns:
+    -------
         List of dictionaries with name and email for each address
+
     """
     if not address_string:
         return []
@@ -126,15 +135,17 @@ def parse_address_list(address_string: str) -> List[Dict[str, str]]:
 
 
 def format_address(name: str, email: str) -> str:
-    """
-    Format a name and email into a proper email address string.
+    """Format a name and email into a proper email address string.
 
     Args:
+    ----
         name: Display name
         email: Email address
 
     Returns:
+    -------
         Formatted address string
+
     """
     if not email:
         return ""
@@ -149,14 +160,16 @@ def format_address(name: str, email: str) -> str:
 
 
 def sanitize_subject(subject: str) -> str:
-    """
-    Sanitize an email subject line.
+    """Sanitize an email subject line.
 
     Args:
+    ----
         subject: Raw subject line
 
     Returns:
+    -------
         Sanitized subject string
+
     """
     if not subject:
         return ""
@@ -172,14 +185,16 @@ def sanitize_subject(subject: str) -> str:
 
 
 def clean_html(html_content: str) -> str:
-    """
-    Basic cleanup of HTML content for security.
+    """Basic cleanup of HTML content for security.
 
     Args:
+    ----
         html_content: Raw HTML content
 
     Returns:
+    -------
         Cleaned HTML content
+
     """
     if not html_content:
         return ""
@@ -187,29 +202,28 @@ def clean_html(html_content: str) -> str:
     # Remove potentially dangerous tags and attributes
     # NOTE: This is a basic implementation. In production, use a proper HTML sanitizer.
     cleaned = re.sub(
-        r"<script[^>]*>.*?</script>", "", html_content, flags=re.DOTALL | re.IGNORECASE
+        r"<script[^>]*>.*?</script>", "", html_content, flags=re.DOTALL | re.IGNORECASE,
     )
     cleaned = re.sub(
-        r"<iframe[^>]*>.*?</iframe>", "", cleaned, flags=re.DOTALL | re.IGNORECASE
+        r"<iframe[^>]*>.*?</iframe>", "", cleaned, flags=re.DOTALL | re.IGNORECASE,
     )
     cleaned = re.sub(
-        r"<object[^>]*>.*?</object>", "", cleaned, flags=re.DOTALL | re.IGNORECASE
+        r"<object[^>]*>.*?</object>", "", cleaned, flags=re.DOTALL | re.IGNORECASE,
     )
     cleaned = re.sub(
-        r"<embed[^>]*>.*?</embed>", "", cleaned, flags=re.DOTALL | re.IGNORECASE
+        r"<embed[^>]*>.*?</embed>", "", cleaned, flags=re.DOTALL | re.IGNORECASE,
     )
 
     # Remove on* event handlers
     cleaned = re.sub(
-        r'\s+on\w+\s*=\s*["\'][^"\']*["\']', "", cleaned, flags=re.IGNORECASE
+        r'\s+on\w+\s*=\s*["\'][^"\']*["\']', "", cleaned, flags=re.IGNORECASE,
     )
 
     # Remove javascript: URLs
-    cleaned = re.sub(
+    return re.sub(
         r'(href|src)\s*=\s*["\']javascript:[^"\']*["\']',
         r'\1="#"',
         cleaned,
         flags=re.IGNORECASE,
     )
 
-    return cleaned

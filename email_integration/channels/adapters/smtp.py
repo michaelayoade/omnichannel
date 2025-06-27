@@ -1,19 +1,17 @@
-"""
-SMTP email protocol adapter implementation.
+"""SMTP email protocol adapter implementation.
 
 This module provides an SMTP adapter for sending outbound email messages
 with support for plain text, HTML content, and attachments.
 """
 
 import smtplib
-import socket
 import ssl
 import uuid
 from email.mime.application import MIMEApplication
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.utils import formatdate, make_msgid
-from typing import Any, Dict, List
+from typing import Any
 
 from django.utils import timezone
 
@@ -28,19 +26,19 @@ logger = ContextLogger(__name__)
 
 
 class SMTPAdapter(BaseOutboundAdapter):
-    """
-    SMTP adapter for sending email messages.
+    """SMTP adapter for sending email messages.
 
     Handles connection to SMTP servers, authentication, and message sending
     with support for plain text, HTML content, and attachments.
     """
 
     def __init__(self, account):
-        """
-        Initialize the SMTP adapter with an email account.
+        """Initialize the SMTP adapter with an email account.
 
         Args:
+        ----
             account: The EmailAccount model instance
+
         """
         self.account = account
         self.server = None
@@ -58,11 +56,12 @@ class SMTPAdapter(BaseOutboundAdapter):
         )
 
     def connect(self) -> None:
-        """
-        Establish a connection to the SMTP server.
+        """Establish a connection to the SMTP server.
 
-        Raises:
+        Raises
+        ------
             ConnectionError: If unable to connect to the server
+
         """
         try:
             logger.info(
@@ -95,17 +94,18 @@ class SMTPAdapter(BaseOutboundAdapter):
 
             logger.debug("Connected to SMTP server")
 
-        except (socket.error, ssl.SSLError, smtplib.SMTPException) as e:
-            error_msg = f"Failed to connect to SMTP server: {str(e)}"
+        except (OSError, ssl.SSLError, smtplib.SMTPException) as e:
+            error_msg = f"Failed to connect to SMTP server: {e!s}"
             logger.error(error_msg)
             raise ConnectionError(error_msg)
 
     def authenticate(self) -> None:
-        """
-        Authenticate to the SMTP server using account credentials.
+        """Authenticate to the SMTP server using account credentials.
 
-        Raises:
+        Raises
+        ------
             AuthenticationError: If authentication fails
+
         """
         if not self.server:
             self.connect()
@@ -124,28 +124,28 @@ class SMTPAdapter(BaseOutboundAdapter):
             logger.debug("SMTP authentication successful")
 
         except smtplib.SMTPAuthenticationError as e:
-            error_msg = f"SMTP authentication failed: {str(e)}"
+            error_msg = f"SMTP authentication failed: {e!s}"
             logger.error(error_msg)
             raise AuthenticationError(error_msg)
 
         except Exception as e:
             # Catch any unexpected errors
-            error_msg = f"Unexpected error during SMTP authentication: {str(e)}"
+            error_msg = f"Unexpected error during SMTP authentication: {e!s}"
             logger.exception(error_msg)
             raise AuthenticationError(error_msg)
 
     def send(
         self,
-        to_emails: List[str],
+        to_emails: list[str],
         subject: str,
-        plain_body: str = None,
-        html_body: str = None,
+        plain_body: str | None = None,
+        html_body: str | None = None,
         **kwargs,
-    ) -> Dict[str, Any]:
-        """
-        Send an email message through the SMTP server.
+    ) -> dict[str, Any]:
+        """Send an email message through the SMTP server.
 
         Args:
+        ----
             to_emails: List of recipient email addresses
             subject: Email subject
             plain_body: Plain text content (required if html_body not provided)
@@ -158,11 +158,14 @@ class SMTPAdapter(BaseOutboundAdapter):
                 from_name: Sender display name
 
         Returns:
+        -------
             Dictionary with message details including message_id
 
         Raises:
+        ------
             SendError: If there is an error sending the message
             ValueError: If neither plain_body nor html_body is provided
+
         """
         if not plain_body and not html_body:
             error_msg = "Either plain_body or html_body must be provided"
@@ -184,7 +187,7 @@ class SMTPAdapter(BaseOutboundAdapter):
             attachments = kwargs.get("attachments", [])
             reply_to = kwargs.get("reply_to")
             from_name = kwargs.get(
-                "from_name", self.account.display_name or self.account.name
+                "from_name", self.account.display_name or self.account.name,
             )
 
             # Set basic headers
@@ -193,7 +196,7 @@ class SMTPAdapter(BaseOutboundAdapter):
             msg["To"] = ", ".join(to_emails)
             msg["Date"] = formatdate(localtime=True)
             msg["Message-ID"] = make_msgid(
-                domain=self.account.email_address.split("@")[1]
+                domain=self.account.email_address.split("@")[1],
             )
 
             # Set additional headers if provided
@@ -217,7 +220,7 @@ class SMTPAdapter(BaseOutboundAdapter):
                 filename = attachment["name"]
                 content = attachment["content"]
                 content_type = attachment.get(
-                    "content_type", "application/octet-stream"
+                    "content_type", "application/octet-stream",
                 )
 
                 # Create attachment part
@@ -232,7 +235,7 @@ class SMTPAdapter(BaseOutboundAdapter):
             # Send the message
             logger.info(f"Sending email to {len(all_recipients)} recipients")
             self.server.send_message(
-                msg, from_addr=self.account.email_address, to_addrs=all_recipients
+                msg, from_addr=self.account.email_address, to_addrs=all_recipients,
             )
 
             # Log success
@@ -253,17 +256,17 @@ class SMTPAdapter(BaseOutboundAdapter):
             }
 
         except smtplib.SMTPException as e:
-            error_msg = f"SMTP error sending message: {str(e)}"
+            error_msg = f"SMTP error sending message: {e!s}"
             logger.error(error_msg)
             raise SendError(error_msg)
 
-        except (socket.error, ssl.SSLError) as e:
-            error_msg = f"Connection error sending message: {str(e)}"
+        except (OSError, ssl.SSLError) as e:
+            error_msg = f"Connection error sending message: {e!s}"
             logger.error(error_msg)
             raise ConnectionError(error_msg)
 
         except Exception as e:
-            error_msg = f"Unexpected error sending message: {str(e)}"
+            error_msg = f"Unexpected error sending message: {e!s}"
             logger.exception(error_msg)
             raise SendError(error_msg)
 
@@ -272,14 +275,12 @@ class SMTPAdapter(BaseOutboundAdapter):
             self.disconnect()
 
     def disconnect(self) -> None:
-        """
-        Close the connection to the SMTP server.
-        """
+        """Close the connection to the SMTP server."""
         if self.server:
             try:
                 self.server.quit()
                 logger.debug("Disconnected from SMTP server")
-            except (smtplib.SMTPException, socket.error) as e:
-                logger.warning(f"Error disconnecting from SMTP server: {str(e)}")
+            except (OSError, smtplib.SMTPException) as e:
+                logger.warning(f"Error disconnecting from SMTP server: {e!s}")
             finally:
                 self.server = None

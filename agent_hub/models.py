@@ -17,10 +17,10 @@ class AgentStatus(models.TextChoices):
 
 class AgentProfile(models.Model):
     user = models.OneToOneField(
-        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="agent_profile"
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="agent_profile",
     )
     status = models.CharField(
-        max_length=10, choices=AgentStatus.choices, default=AgentStatus.OFFLINE
+        max_length=10, choices=AgentStatus.choices, default=AgentStatus.OFFLINE,
     )
     current_conversation_count = models.PositiveIntegerField(default=0)
 
@@ -46,7 +46,7 @@ class Conversation(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     channel = models.CharField(max_length=20, choices=ChannelTypes.choices)
     customer = models.ForeignKey(
-        Customer, on_delete=models.CASCADE, related_name="agent_hub_conversations"
+        Customer, on_delete=models.CASCADE, related_name="agent_hub_conversations",
     )
     assigned_agent = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -66,7 +66,7 @@ class Conversation(models.Model):
 
     # Generic foreign key to link to specific channel accounts (e.g., EmailAccount)
     content_type = models.ForeignKey(
-        ContentType, on_delete=models.CASCADE, null=True, blank=True
+        ContentType, on_delete=models.CASCADE, null=True, blank=True,
     )
     object_id = models.PositiveIntegerField(null=True, blank=True)
     channel_account = GenericForeignKey("content_type", "object_id")
@@ -86,7 +86,7 @@ class MessageDirection(models.TextChoices):
 class Message(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     conversation = models.ForeignKey(
-        Conversation, on_delete=models.CASCADE, related_name="messages"
+        Conversation, on_delete=models.CASCADE, related_name="messages",
     )
     direction = models.CharField(max_length=10, choices=MessageDirection.choices)
     body = models.TextField()
@@ -110,7 +110,7 @@ class Message(models.Model):
 
 class QuickReplyTemplate(models.Model):
     agent = models.ForeignKey(
-        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="quick_replies"
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="quick_replies",
     )
     title = models.CharField(max_length=100)
     content = models.TextField()
@@ -141,4 +141,7 @@ class AgentPerformanceSnapshot(models.Model):
         ordering = ["-period_start"]
 
     def __str__(self):
-        return f"Performance for {self.agent.username} from {self.period_start} to {self.period_end}"
+        return (
+            f"Performance for {self.agent.username} from {self.period_start} "
+            f"to {self.period_end}"
+        )

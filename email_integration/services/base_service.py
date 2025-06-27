@@ -1,5 +1,4 @@
-"""
-Base service module with common functionality for email integration services.
+"""Base service module with common functionality for email integration services.
 
 This module provides base functionality and common utilities used across
 all email integration service modules.
@@ -18,11 +17,12 @@ class BaseService:
     """Base service class with common functionality for email services."""
 
     def __init__(self, request=None):
-        """
-        Initialize service with optional request context.
+        """Initialize service with optional request context.
 
         Args:
+        ----
             request: Optional Django request object for context logging
+
         """
         self.logger = ContextLogger(__name__)
         self.request = request
@@ -50,37 +50,41 @@ class BaseService:
         return ip
 
     def get_account(self, account_id):
-        """
-        Get an email account by ID with proper error handling.
+        """Get an email account by ID with proper error handling.
 
         Args:
+        ----
             account_id: The ID of the account to retrieve
 
         Returns:
+        -------
             EmailAccount instance
 
         Raises:
+        ------
             AccountNotFoundError: If account doesn't exist
+
         """
         try:
             # Use select_related to optimize queries
             return EmailAccount.objects.select_related("organization").get(
-                id=account_id
+                id=account_id,
             )
         except EmailAccount.DoesNotExist:
             self.logger.warning(
-                "Email account not found", extra={"account_id": account_id}
+                "Email account not found", extra={"account_id": account_id},
             )
             raise AccountNotFoundError(f"Email account with ID {account_id} not found")
 
     def log_transaction(self, action, status, details=None):
-        """
-        Log a transaction with consistent format.
+        """Log a transaction with consistent format.
 
         Args:
+        ----
             action: The action being performed
             status: Status of the transaction ('success', 'error', etc.)
             details: Optional dictionary of additional details
+
         """
         log_data = {
             "action": action,
@@ -100,14 +104,16 @@ class BaseService:
 
     @staticmethod
     def transaction_atomic(func):
-        """
-        Decorator to wrap a function in a database transaction.
+        """Decorator to wrap a function in a database transaction.
 
         Args:
+        ----
             func: The function to wrap
 
         Returns:
+        -------
             Wrapped function with transaction handling
+
         """
 
         def wrapper(*args, **kwargs):

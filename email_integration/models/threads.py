@@ -11,18 +11,18 @@ __all__ = ["EmailThread"]
 class EmailThread(models.Model):
     thread_id = models.CharField(max_length=255, unique=True)
     account = models.ForeignKey(
-        EmailAccount, on_delete=models.CASCADE, related_name="threads"
+        EmailAccount, on_delete=models.CASCADE, related_name="threads",
     )
     subject = models.CharField(max_length=500)
     participants = models.JSONField(default=list)
     message_count = models.IntegerField(default=0)
     status = models.CharField(
-        max_length=20, choices=ThreadStatus.choices, default=ThreadStatus.OPEN
+        max_length=20, choices=ThreadStatus.choices, default=ThreadStatus.OPEN,
     )
 
     # Customer Linking
     content_type = models.ForeignKey(
-        ContentType, on_delete=models.CASCADE, null=True, blank=True
+        ContentType, on_delete=models.CASCADE, null=True, blank=True,
     )
     object_id = models.PositiveIntegerField(null=True, blank=True)
     linked_customer = GenericForeignKey("content_type", "object_id")

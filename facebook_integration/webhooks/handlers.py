@@ -1,6 +1,5 @@
 import logging
 import uuid
-from typing import Dict, Optional
 
 from django.utils import timezone
 
@@ -27,9 +26,8 @@ class FacebookWebhookHandler:
         self.page = page
         self.messenger_service = FacebookMessengerService(page)
 
-    def process_webhook_event(self, event_data: Dict) -> bool:
+    def process_webhook_event(self, event_data: dict) -> bool:
         """Process a webhook event from Facebook."""
-
         # Extract event information
         messaging_events = event_data.get("entry", [])
 
@@ -51,9 +49,8 @@ class FacebookWebhookHandler:
 
         return True
 
-    def _process_individual_event(self, event: Dict):
+    def _process_individual_event(self, event: dict):
         """Process an individual messaging event."""
-
         # Generate unique event ID
         event_id = str(uuid.uuid4())
 
@@ -62,7 +59,7 @@ class FacebookWebhookHandler:
 
         # Create webhook event record
         webhook_event = FacebookWebhookEvent.objects.create(
-            event_id=event_id, event_type=event_type, page=self.page, raw_data=event
+            event_id=event_id, event_type=event_type, page=self.page, raw_data=event,
         )
 
         try:
@@ -96,16 +93,15 @@ class FacebookWebhookHandler:
                     {
                         "action": "ignored",
                         "reason": f"Unhandled event type: {event_type}",
-                    }
+                    },
                 )
 
         except Exception as e:
             webhook_event.mark_as_failed(str(e))
             logger.error(f"Error handling Facebook event {event_id}: {e}")
 
-    def _determine_event_type(self, event: Dict) -> str:
+    def _determine_event_type(self, event: dict) -> str:
         """Determine the type of webhook event."""
-
         if "message" in event:
             return "message"
         elif "postback" in event:
@@ -129,7 +125,6 @@ class FacebookWebhookHandler:
 
     def _get_or_create_user(self, sender_id: str) -> FacebookUser:
         """Get or create Facebook user."""
-
         facebook_user, created = FacebookUser.objects.get_or_create(
             psid=sender_id,
             page=self.page,
@@ -146,9 +141,8 @@ class FacebookWebhookHandler:
 
     def _update_user_profile(self, facebook_user: FacebookUser):
         """Update user profile from Facebook API."""
-
         success, profile_data = self.messenger_service.api.get_user_profile(
-            facebook_user.psid
+            facebook_user.psid,
         )
 
         if success:
@@ -165,7 +159,6 @@ class FacebookWebhookHandler:
 
     def _match_customer(self, facebook_user: FacebookUser):
         """Try to match Facebook user with existing customer."""
-
         if facebook_user.customer:
             return  # Already matched
 
@@ -182,18 +175,17 @@ class FacebookWebhookHandler:
 
     def _handle_message_event(
         self,
-        event: Dict,
+        event: dict,
         facebook_user: FacebookUser,
         webhook_event: FacebookWebhookEvent,
     ):
         """Handle incoming message events."""
-
         message_data = event.get("message", {})
 
         # Skip messages without mid (like delivery confirmations)
         if "mid" not in message_data:
             webhook_event.mark_as_processed(
-                {"action": "ignored", "reason": "No message ID"}
+                {"action": "ignored", "reason": "No message ID"},
             )
             return
 
@@ -221,14 +213,13 @@ class FacebookWebhookHandler:
             {
                 "message_id": facebook_message.message_id,
                 "conversation_id": conversation.id if conversation else None,
-            }
+            },
         )
 
     def _create_message_from_event(
-        self, message_data: Dict, facebook_user: FacebookUser
+        self, message_data: dict, facebook_user: FacebookUser,
     ) -> FacebookMessage:
         """Create FacebookMessage from webhook event data."""
-
         mid = message_data.get("mid")
         timestamp = message_data.get("timestamp")
 
@@ -282,7 +273,7 @@ class FacebookWebhookHandler:
             attachment_payload=attachment_payload,
             created_at=(
                 timezone.datetime.fromtimestamp(
-                    timestamp / 1000, tz=timezone.get_current_timezone()
+                    timestamp / 1000, tz=timezone.get_current_timezone(),
                 )
                 if timestamp
                 else timezone.now()
@@ -291,12 +282,11 @@ class FacebookWebhookHandler:
 
     def _handle_postback_event(
         self,
-        event: Dict,
+        event: dict,
         facebook_user: FacebookUser,
         webhook_event: FacebookWebhookEvent,
     ):
         """Handle postback events (button clicks)."""
-
         postback_data = event.get("postback", {})
         payload = postback_data.get("payload", "")
         title = postback_data.get("title", "")
@@ -330,17 +320,16 @@ class FacebookWebhookHandler:
                 "payload": payload,
                 "title": title,
                 "message_id": facebook_message.message_id,
-            }
+            },
         )
 
     def _handle_optin_event(
         self,
-        event: Dict,
+        event: dict,
         facebook_user: FacebookUser,
         webhook_event: FacebookWebhookEvent,
     ):
         """Handle opt-in events."""
-
         optin_data = event.get("optin", {})
         ref = optin_data.get("ref", "")
 
@@ -356,12 +345,11 @@ class FacebookWebhookHandler:
 
     def _handle_referral_event(
         self,
-        event: Dict,
+        event: dict,
         facebook_user: FacebookUser,
         webhook_event: FacebookWebhookEvent,
     ):
         """Handle referral events."""
-
         referral_data = event.get("referral", {})
         ref = referral_data.get("ref", "")
         source = referral_data.get("source", "")
@@ -373,7 +361,7 @@ class FacebookWebhookHandler:
                 "ref": ref,
                 "source": source,
                 "type": type_referral,
-            }
+            },
         )
 
         # Process referral flows
@@ -381,12 +369,11 @@ class FacebookWebhookHandler:
 
     def _handle_handover_event(
         self,
-        event: Dict,
+        event: dict,
         facebook_user: FacebookUser,
         webhook_event: FacebookWebhookEvent,
     ):
         """Handle handover protocol events."""
-
         if "pass_thread_control" in event:
             self._handle_thread_control_passed(event, facebook_user, webhook_event)
         elif "take_thread_control" in event:
@@ -396,19 +383,18 @@ class FacebookWebhookHandler:
 
     def _handle_thread_control_passed(
         self,
-        event: Dict,
+        event: dict,
         facebook_user: FacebookUser,
         webhook_event: FacebookWebhookEvent,
     ):
         """Handle thread control passed to another app."""
-
         pass_data = event.get("pass_thread_control", {})
         new_owner_app_id = pass_data.get("new_owner_app_id", "")
         metadata = pass_data.get("metadata", "")
 
         # Update user state
         user_state, _ = FacebookUserState.objects.get_or_create(
-            facebook_user=facebook_user
+            facebook_user=facebook_user,
         )
         user_state.in_handover = True
         user_state.handover_app_id = new_owner_app_id
@@ -420,24 +406,23 @@ class FacebookWebhookHandler:
                 "action": "thread_control_passed",
                 "new_owner_app_id": new_owner_app_id,
                 "metadata": metadata,
-            }
+            },
         )
 
     def _handle_thread_control_taken(
         self,
-        event: Dict,
+        event: dict,
         facebook_user: FacebookUser,
         webhook_event: FacebookWebhookEvent,
     ):
         """Handle thread control taken by our app."""
-
         take_data = event.get("take_thread_control", {})
         previous_owner_app_id = take_data.get("previous_owner_app_id", "")
         metadata = take_data.get("metadata", "")
 
         # Update user state
         user_state, _ = FacebookUserState.objects.get_or_create(
-            facebook_user=facebook_user
+            facebook_user=facebook_user,
         )
         user_state.in_handover = False
         user_state.handover_app_id = ""
@@ -449,17 +434,16 @@ class FacebookWebhookHandler:
                 "action": "thread_control_taken",
                 "previous_owner_app_id": previous_owner_app_id,
                 "metadata": metadata,
-            }
+            },
         )
 
     def _handle_thread_control_requested(
         self,
-        event: Dict,
+        event: dict,
         facebook_user: FacebookUser,
         webhook_event: FacebookWebhookEvent,
     ):
         """Handle thread control request."""
-
         request_data = event.get("request_thread_control", {})
         requested_owner_app_id = request_data.get("requested_owner_app_id", "")
         metadata = request_data.get("metadata", "")
@@ -469,19 +453,18 @@ class FacebookWebhookHandler:
                 "action": "thread_control_requested",
                 "requested_owner_app_id": requested_owner_app_id,
                 "metadata": metadata,
-            }
+            },
         )
 
         # Could implement automatic approval logic here
 
     def _handle_delivery_event(
         self,
-        event: Dict,
+        event: dict,
         facebook_user: FacebookUser,
         webhook_event: FacebookWebhookEvent,
     ):
         """Handle message delivery events."""
-
         delivery_data = event.get("delivery", {})
         mids = delivery_data.get("mids", [])
         watermark = delivery_data.get("watermark")
@@ -491,7 +474,7 @@ class FacebookWebhookHandler:
         for mid in mids:
             try:
                 message = FacebookMessage.objects.get(
-                    facebook_message_id=mid, page=self.page
+                    facebook_message_id=mid, page=self.page,
                 )
                 message.mark_as_delivered()
                 updated_count += 1
@@ -503,17 +486,16 @@ class FacebookWebhookHandler:
                 "action": "delivery_update",
                 "updated_messages": updated_count,
                 "watermark": watermark,
-            }
+            },
         )
 
     def _handle_read_event(
         self,
-        event: Dict,
+        event: dict,
         facebook_user: FacebookUser,
         webhook_event: FacebookWebhookEvent,
     ):
         """Handle message read events."""
-
         read_data = event.get("read", {})
         watermark = read_data.get("watermark")
 
@@ -523,7 +505,7 @@ class FacebookWebhookHandler:
             facebook_user=facebook_user,
             direction="outbound",
             created_at__lte=timezone.datetime.fromtimestamp(
-                watermark / 1000, tz=timezone.get_current_timezone()
+                watermark / 1000, tz=timezone.get_current_timezone(),
             ),
         ).update(status="read", read_at=timezone.now())
 
@@ -532,14 +514,13 @@ class FacebookWebhookHandler:
                 "action": "read_update",
                 "updated_messages": updated_count,
                 "watermark": watermark,
-            }
+            },
         )
 
     def _get_or_create_conversation(
-        self, facebook_user: FacebookUser
-    ) -> Optional[Conversation]:
+        self, facebook_user: FacebookUser,
+    ) -> Conversation | None:
         """Get or create conversation for Facebook user."""
-
         # Try to get existing active conversation
         existing_conversation = Conversation.objects.filter(
             facebook_messages__facebook_user=facebook_user,
@@ -573,13 +554,12 @@ class FacebookWebhookHandler:
             return None
 
     def _process_conversation_flows(
-        self, facebook_user: FacebookUser, facebook_message: FacebookMessage
+        self, facebook_user: FacebookUser, facebook_message: FacebookMessage,
     ):
         """Process conversation flows for incoming messages."""
-
         # Get user state
         user_state, _ = FacebookUserState.objects.get_or_create(
-            facebook_user=facebook_user
+            facebook_user=facebook_user,
         )
 
         # Skip if in handover
@@ -600,10 +580,9 @@ class FacebookWebhookHandler:
         facebook_message: FacebookMessage,
     ):
         """Process conversation flows for postback events."""
-
         # Get user state
         user_state, _ = FacebookUserState.objects.get_or_create(
-            facebook_user=facebook_user
+            facebook_user=facebook_user,
         )
 
         # Skip if in handover
@@ -632,27 +611,25 @@ class FacebookWebhookHandler:
 
     def _process_referral_flows(self, facebook_user: FacebookUser, ref: str):
         """Process conversation flows for referral events."""
-
         flows = FacebookConversationFlow.objects.filter(
-            page=self.page, trigger_type="referral", trigger_value=ref, is_active=True
+            page=self.page, trigger_type="referral", trigger_value=ref, is_active=True,
         ).order_by("-priority")
 
         if flows.exists():
             user_state, _ = FacebookUserState.objects.get_or_create(
-                facebook_user=facebook_user
+                facebook_user=facebook_user,
             )
             self._start_conversation_flow(user_state, flows.first())
 
     def _check_flow_triggers(
-        self, facebook_user: FacebookUser, facebook_message: FacebookMessage
+        self, facebook_user: FacebookUser, facebook_message: FacebookMessage,
     ):
         """Check for conversation flow triggers in incoming message."""
-
         message_text = facebook_message.text.lower().strip()
 
         # Check for keyword triggers
         keyword_flows = FacebookConversationFlow.objects.filter(
-            page=self.page, trigger_type="keyword", is_active=True
+            page=self.page, trigger_type="keyword", is_active=True,
         ).order_by("-priority")
 
         for flow in keyword_flows:
@@ -661,29 +638,27 @@ class FacebookWebhookHandler:
                 keyword = keyword.strip()
                 if keyword and keyword in message_text:
                     user_state, _ = FacebookUserState.objects.get_or_create(
-                        facebook_user=facebook_user
+                        facebook_user=facebook_user,
                     )
                     self._start_conversation_flow(user_state, flow)
                     return
 
     def _trigger_welcome_flow(self, facebook_user: FacebookUser):
         """Trigger welcome flow for new users."""
-
         welcome_flows = FacebookConversationFlow.objects.filter(
-            page=self.page, flow_type="welcome", is_active=True
+            page=self.page, flow_type="welcome", is_active=True,
         ).order_by("-priority")
 
         if welcome_flows.exists():
             user_state, _ = FacebookUserState.objects.get_or_create(
-                facebook_user=facebook_user
+                facebook_user=facebook_user,
             )
             self._start_conversation_flow(user_state, welcome_flows.first())
 
     def _start_conversation_flow(
-        self, user_state: FacebookUserState, flow: FacebookConversationFlow
+        self, user_state: FacebookUserState, flow: FacebookConversationFlow,
     ):
         """Start a conversation flow for a user."""
-
         flow.increment_usage()
 
         user_state.update_state(
@@ -696,14 +671,13 @@ class FacebookWebhookHandler:
         self._execute_flow_step(user_state, "start")
 
     def _continue_conversation_flow(
-        self, user_state: FacebookUserState, facebook_message: FacebookMessage
+        self, user_state: FacebookUserState, facebook_message: FacebookMessage,
     ):
         """Continue an existing conversation flow."""
-
         # This would contain the flow execution logic
         # For now, we'll just log that a flow is continuing
         logger.info(
-            f"Continuing flow {user_state.current_flow.name} for user {user_state.facebook_user.psid}"
+            f"Continuing flow {user_state.current_flow.name} for user {user_state.facebook_user.psid}",
         )
 
         # Execute next step based on current step and user input
@@ -716,7 +690,6 @@ class FacebookWebhookHandler:
         facebook_message: FacebookMessage = None,
     ):
         """Execute a specific step in a conversation flow."""
-
         flow = user_state.current_flow
         if not flow:
             return
@@ -749,11 +722,10 @@ class FacebookWebhookHandler:
     def _execute_flow_action(
         self,
         user_state: FacebookUserState,
-        action: Dict,
+        action: dict,
         facebook_message: FacebookMessage = None,
     ):
         """Execute a flow action."""
-
         action_type = action.get("type")
         facebook_user = user_state.facebook_user
 
@@ -768,7 +740,7 @@ class FacebookWebhookHandler:
             quick_replies = action.get("quick_replies", [])
             text = self._process_flow_variables(text, user_state, facebook_message)
             self.messenger_service.send_quick_reply(
-                facebook_user.psid, text, quick_replies
+                facebook_user.psid, text, quick_replies,
             )
 
         elif action_type == "send_template":
@@ -776,7 +748,7 @@ class FacebookWebhookHandler:
             variables = action.get("variables", {})
             # Process variables
             processed_variables = self._process_flow_variables(
-                variables, user_state, facebook_message
+                variables, user_state, facebook_message,
             )
 
             try:
@@ -784,7 +756,7 @@ class FacebookWebhookHandler:
 
                 template = FacebookTemplate.objects.get(id=template_id)
                 self.messenger_service.send_template_message(
-                    facebook_user.psid, template, processed_variables
+                    facebook_user.psid, template, processed_variables,
                 )
             except FacebookTemplate.DoesNotExist:
                 logger.error(f"Template {template_id} not found")
@@ -803,11 +775,10 @@ class FacebookWebhookHandler:
     def _determine_next_step(
         self,
         user_state: FacebookUserState,
-        step_config: Dict,
+        step_config: dict,
         facebook_message: FacebookMessage = None,
-    ) -> Optional[str]:
+    ) -> str | None:
         """Determine the next step in a conversation flow."""
-
         next_steps = step_config.get("next", {})
 
         if isinstance(next_steps, str):
@@ -817,7 +788,7 @@ class FacebookWebhookHandler:
             # Conditional next steps
             for condition, next_step in next_steps.items():
                 if self._evaluate_flow_condition(
-                    condition, user_state, facebook_message
+                    condition, user_state, facebook_message,
                 ):
                     return next_step
 
@@ -830,7 +801,6 @@ class FacebookWebhookHandler:
         facebook_message: FacebookMessage = None,
     ) -> bool:
         """Evaluate a flow condition."""
-
         # Simple condition evaluation - could be enhanced
         if not facebook_message:
             return False
@@ -855,7 +825,6 @@ class FacebookWebhookHandler:
         facebook_message: FacebookMessage = None,
     ):
         """Process variables in flow content."""
-
         if isinstance(content, str):
             # Replace user variables
             facebook_user = user_state.facebook_user
@@ -874,7 +843,7 @@ class FacebookWebhookHandler:
             processed = {}
             for key, value in content.items():
                 processed[key] = self._process_flow_variables(
-                    value, user_state, facebook_message
+                    value, user_state, facebook_message,
                 )
             return processed
 

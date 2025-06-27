@@ -10,11 +10,11 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument(
-            "--account-id", type=int, help="Specific email account ID to poll"
+            "--account-id", type=int, help="Specific email account ID to poll",
         )
 
         parser.add_argument(
-            "--email-address", type=str, help="Email address of account to poll"
+            "--email-address", type=str, help="Email address of account to poll",
         )
 
         parser.add_argument(
@@ -25,7 +25,7 @@ class Command(BaseCommand):
         )
 
         parser.add_argument(
-            "--all-accounts", action="store_true", help="Poll all active email accounts"
+            "--all-accounts", action="store_true", help="Poll all active email accounts",
         )
 
         parser.add_argument(
@@ -41,13 +41,14 @@ class Command(BaseCommand):
             else:
                 if not options["account_id"] and not options["email_address"]:
                     raise CommandError(
-                        "Either --account-id, --email-address, or --all-accounts is required"
+                        "Either --account-id, --email-address, or --all-accounts is "
+                        "required",
                     )
 
                 self._poll_single_account(options)
 
         except Exception as e:
-            raise CommandError(f"Polling failed: {str(e)}")
+            raise CommandError(f"Polling failed: {e!s}")
 
     def _poll_single_account(self, options):
         """Poll a single email account."""
@@ -57,30 +58,32 @@ class Command(BaseCommand):
                 account = EmailAccount.objects.get(id=options["account_id"])
             else:
                 account = EmailAccount.objects.get(
-                    email_address=options["email_address"]
+                    email_address=options["email_address"],
                 )
 
             # Check if polling is enabled (unless forced)
             if not options["force"] and not account.auto_polling_enabled:
                 self.stdout.write(
                     self.style.WARNING(
-                        f"Polling disabled for {account.email_address}. Use --force to override."
-                    )
+                        f"Polling disabled for {account.email_address}. "
+                        f"Use --force to override.",
+                    ),
                 )
                 return
 
             if account.status != "active":
                 self.stdout.write(
                     self.style.WARNING(
-                        f"Account {account.email_address} is not active (status: {account.status})"
-                    )
+                        f"Account {account.email_address} is not active "
+                        f"(status: {account.status})",
+                    ),
                 )
                 return
 
             self.stdout.write(
                 self.style.SUCCESS(
-                    f"Polling account: {account.name} ({account.email_address})"
-                )
+                    f"Polling account: {account.name} ({account.email_address})",
+                ),
             )
 
             # Start polling
@@ -103,7 +106,7 @@ class Command(BaseCommand):
 
             if poll_log.status == "success":
                 self.stdout.write(
-                    self.style.SUCCESS("✓ Polling completed successfully")
+                    self.style.SUCCESS("✓ Polling completed successfully"),
                 )
             else:
                 self.stdout.write(self.style.ERROR("✗ Polling failed or incomplete"))
@@ -123,7 +126,7 @@ class Command(BaseCommand):
             return
 
         self.stdout.write(
-            self.style.SUCCESS(f"Polling {accounts.count()} email accounts...")
+            self.style.SUCCESS(f"Polling {accounts.count()} email accounts..."),
         )
 
         total_processed = 0
@@ -144,23 +147,23 @@ class Command(BaseCommand):
                     f"  Found: {poll_log.messages_found}, "
                     f"Processed: {poll_log.messages_processed}, "
                     f"Failed: {poll_log.messages_failed}, "
-                    f"Duration: {duration:.2f}s"
+                    f"Duration: {duration:.2f}s",
                 )
 
                 total_processed += poll_log.messages_processed
                 total_failed += poll_log.messages_failed
 
-                if poll_log.status == "success" or poll_log.status == "no_messages":
+                if poll_log.status in ("success", "no_messages"):
                     successful_accounts += 1
                     self.stdout.write(
-                        self.style.SUCCESS(f"  ✓ {account.email_address}")
+                        self.style.SUCCESS(f"  ✓ {account.email_address}"),
                     )
                 else:
                     failed_accounts += 1
                     self.stdout.write(
                         self.style.ERROR(
-                            f"  ✗ {account.email_address}: {poll_log.error_message}"
-                        )
+                            f"  ✗ {account.email_address}: {poll_log.error_message}",
+                        ),
                     )
 
             except Exception as e:
@@ -179,5 +182,5 @@ class Command(BaseCommand):
             self.stdout.write(self.style.SUCCESS("✓ All accounts polled successfully"))
         else:
             self.stdout.write(
-                self.style.WARNING(f"⚠ {failed_accounts} accounts had errors")
+                self.style.WARNING(f"⚠ {failed_accounts} accounts had errors"),
             )

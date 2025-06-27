@@ -13,7 +13,7 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument(
-            "--name", type=str, required=True, help="Business account name"
+            "--name", type=str, required=True, help="Business account name",
         )
 
         parser.add_argument(
@@ -31,7 +31,7 @@ class Command(BaseCommand):
         )
 
         parser.add_argument(
-            "--access-token", type=str, required=True, help="WhatsApp Access Token"
+            "--access-token", type=str, required=True, help="WhatsApp Access Token",
         )
 
         parser.add_argument(
@@ -44,7 +44,7 @@ class Command(BaseCommand):
         parser.add_argument("--app-id", type=str, required=True, help="Facebook App ID")
 
         parser.add_argument(
-            "--app-secret", type=str, required=True, help="Facebook App Secret"
+            "--app-secret", type=str, required=True, help="Facebook App Secret",
         )
 
         parser.add_argument(
@@ -74,10 +74,13 @@ class Command(BaseCommand):
             with transaction.atomic():
                 # Check if account already exists
                 if WhatsAppBusinessAccount.objects.filter(
-                    business_account_id=options["business_account_id"]
+                    business_account_id=options["business_account_id"],
                 ).exists():
                     raise CommandError(
-                        f'Business account {options["business_account_id"]} already exists'
+
+                            f'Business account {options["business_account_id"]} '
+                            f'already exists',
+
                     )
 
                 # Get business profile to populate phone number info
@@ -86,11 +89,11 @@ class Command(BaseCommand):
                     profile = api.get_business_profile()
                     test_account.phone_number = profile.get("display_phone_number", "")
                     test_account.display_phone_number = profile.get(
-                        "display_phone_number", ""
+                        "display_phone_number", "",
                     )
                 except WhatsAppAPIError as e:
                     self.stdout.write(
-                        self.style.WARNING(f"Could not fetch profile: {e.message}")
+                        self.style.WARNING(f"Could not fetch profile: {e.message}"),
                     )
                     # Continue anyway, user can update later
 
@@ -99,8 +102,11 @@ class Command(BaseCommand):
 
                 self.stdout.write(
                     self.style.SUCCESS(
-                        f'✓ WhatsApp Business Account "{options["name"]}" created successfully!'
-                    )
+
+                            f'✓ WhatsApp Business Account "{options["name"]}" '
+                            f'created successfully!',
+
+                    ),
                 )
 
                 # Sync templates
@@ -119,25 +125,25 @@ class Command(BaseCommand):
                             language=template_data["language"],
                             components=template_data.get("components", []),
                             quality_score=template_data.get("quality_score", {}).get(
-                                "score", ""
+                                "score", "",
                             ),
                         )
                         template_count += 1
 
                     self.stdout.write(
-                        self.style.SUCCESS(f"✓ Synced {template_count} templates")
+                        self.style.SUCCESS(f"✓ Synced {template_count} templates"),
                     )
 
                 except WhatsAppAPIError as e:
                     self.stdout.write(
-                        self.style.WARNING(f"Could not sync templates: {e.message}")
+                        self.style.WARNING(f"Could not sync templates: {e.message}"),
                     )
 
                 self._show_account_info(test_account)
                 self._show_next_steps()
 
         except Exception as e:
-            raise CommandError(f"Setup failed: {str(e)}")
+            raise CommandError(f"Setup failed: {e!s}")
 
     def _test_connection(self, account):
         """Test API connection."""
@@ -148,10 +154,10 @@ class Command(BaseCommand):
             self.stdout.write(self.style.SUCCESS("✓ API connection successful"))
             self.stdout.write(f'Business name: {profile.get("verified_name", "N/A")}')
             self.stdout.write(
-                f'Phone number: {profile.get("display_phone_number", "N/A")}'
+                f'Phone number: {profile.get("display_phone_number", "N/A")}',
             )
             self.stdout.write(
-                f'Verification status: {profile.get("code_verification_status", "N/A")}'
+                f'Verification status: {profile.get("code_verification_status", "N/A")}',
             )
 
         except WhatsAppAPIError as e:
@@ -175,22 +181,24 @@ class Command(BaseCommand):
         self.stdout.write("=" * 60)
         self.stdout.write("1. Configure webhook URL in Facebook Developer Console:")
         self.stdout.write(
-            "   https://your-domain.com/api/whatsapp/webhook/<business_account_id>/"
+            "   https://your-domain.com/api/whatsapp/webhook/<business_account_id>/",
         )
         self.stdout.write("")
         self.stdout.write("2. Test the integration:")
         self.stdout.write(
-            "   python manage.py test_whatsapp --business-account-id <id> --test-type connectivity"
+            "   python manage.py test_whatsapp --business-account-id <id> "
+            "--test-type connectivity",
         )
         self.stdout.write("")
         self.stdout.write("3. Send a test message:")
         self.stdout.write(
-            "   python manage.py test_whatsapp --business-account-id <id> --test-type send-text --to <phone>"
+            "   python manage.py test_whatsapp --business-account-id <id> "
+            "--test-type send-text --to <phone>",
         )
         self.stdout.write("")
         self.stdout.write("4. Monitor the integration:")
         self.stdout.write(
-            "   python manage.py whatsapp_monitor --business-account-id <id>"
+            "   python manage.py whatsapp_monitor --business-account-id <id>",
         )
         self.stdout.write("")
         self.stdout.write("5. Add the WhatsApp app to Django settings INSTALLED_APPS:")

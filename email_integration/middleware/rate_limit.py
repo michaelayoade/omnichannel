@@ -1,5 +1,4 @@
-"""
-Rate limiting middleware for the email integration app.
+"""Rate limiting middleware for the email integration app.
 
 This module provides rate limiting protection for the application's REST APIs.
 It protects against brute-force attacks and resource abuse by limiting request
@@ -20,8 +19,7 @@ logger = ContextLogger(__name__)
 
 
 class RateLimitMiddleware:
-    """
-    Middleware that applies rate limiting to API requests.
+    """Middleware that applies rate limiting to API requests.
 
     Uses an in-memory cache that tracks requests by IP address or user ID
     and rejects requests that exceed configured thresholds.
@@ -35,7 +33,7 @@ class RateLimitMiddleware:
         # Rate limit configuration
         self.time_window = get_config("RATE_LIMIT_WINDOW", 60)  # seconds
         self.max_requests = get_config(
-            "RATE_LIMIT_MAX_REQUESTS", 30
+            "RATE_LIMIT_MAX_REQUESTS", 30,
         )  # requests per window
         self.enabled = get_config("RATE_LIMIT_ENABLED", True)
 
@@ -81,8 +79,7 @@ class RateLimitMiddleware:
         return any(path.startswith(exempt) for exempt in self.exempt_paths)
 
     def _get_requester_id(self, request):
-        """
-        Get a unique identifier for the requester.
+        """Get a unique identifier for the requester.
 
         Uses user ID for authenticated users, IP address otherwise.
         """
@@ -91,8 +88,7 @@ class RateLimitMiddleware:
         return f"ip:{self._get_client_ip(request)}"
 
     def _is_rate_limited(self, request_id):
-        """
-        Check if a requester has exceeded their rate limit.
+        """Check if a requester has exceeded their rate limit.
 
         Updates the request cache with the current request timestamp.
         Removes old requests outside the time window.

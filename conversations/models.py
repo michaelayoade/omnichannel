@@ -24,13 +24,13 @@ class Conversation(models.Model):
 
     conversation_id = models.CharField(max_length=100, unique=True)
     customer = models.ForeignKey(
-        Customer, on_delete=models.CASCADE, related_name="conversations"
+        Customer, on_delete=models.CASCADE, related_name="conversations",
     )
     channel = models.ForeignKey(
-        CommunicationChannel, on_delete=models.CASCADE, related_name="conversations"
+        CommunicationChannel, on_delete=models.CASCADE, related_name="conversations",
     )
     channel_contact = models.ForeignKey(
-        ChannelContact, on_delete=models.CASCADE, null=True, blank=True
+        ChannelContact, on_delete=models.CASCADE, null=True, blank=True,
     )
     assigned_agent = models.ForeignKey(
         Agent,
@@ -40,10 +40,10 @@ class Conversation(models.Model):
         related_name="conversations",
     )
     status = models.CharField(
-        max_length=20, choices=CONVERSATION_STATUS_CHOICES, default="open"
+        max_length=20, choices=CONVERSATION_STATUS_CHOICES, default="open",
     )
     priority = models.CharField(
-        max_length=10, choices=PRIORITY_CHOICES, default="normal"
+        max_length=10, choices=PRIORITY_CHOICES, default="normal",
     )
     subject = models.CharField(max_length=500, blank=True)
     tags = models.JSONField(default=list, blank=True)
@@ -100,17 +100,17 @@ class Message(models.Model):
     ]
 
     conversation = models.ForeignKey(
-        Conversation, on_delete=models.CASCADE, related_name="messages"
+        Conversation, on_delete=models.CASCADE, related_name="messages",
     )
     message_id = models.CharField(max_length=100, unique=True)
     external_message_id = models.CharField(max_length=200, blank=True)
     sender_type = models.CharField(max_length=20, choices=SENDER_TYPE_CHOICES)
     sender_user = models.ForeignKey(
-        User, on_delete=models.SET_NULL, null=True, blank=True
+        User, on_delete=models.SET_NULL, null=True, blank=True,
     )
     sender_name = models.CharField(max_length=200, blank=True)
     message_type = models.CharField(
-        max_length=20, choices=MESSAGE_TYPE_CHOICES, default="text"
+        max_length=20, choices=MESSAGE_TYPE_CHOICES, default="text",
     )
     content = models.TextField()
     raw_content = models.JSONField(default=dict, blank=True)
@@ -144,7 +144,7 @@ class ConversationParticipant(models.Model):
     ]
 
     conversation = models.ForeignKey(
-        Conversation, on_delete=models.CASCADE, related_name="participants"
+        Conversation, on_delete=models.CASCADE, related_name="participants",
     )
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     role = models.CharField(max_length=20, choices=PARTICIPANT_ROLE_CHOICES)
@@ -157,12 +157,13 @@ class ConversationParticipant(models.Model):
         unique_together = ["conversation", "user"]
 
     def __str__(self):
-        return f"{self.user.get_full_name() or self.user.username} in {self.conversation.conversation_id}"
+        user_display = self.user.get_full_name() or self.user.username
+        return f"{user_display} in {self.conversation.conversation_id}"
 
 
 class ConversationNote(models.Model):
     conversation = models.ForeignKey(
-        Conversation, on_delete=models.CASCADE, related_name="notes"
+        Conversation, on_delete=models.CASCADE, related_name="notes",
     )
     author = models.ForeignKey(User, on_delete=models.CASCADE)
     content = models.TextField()
@@ -175,4 +176,5 @@ class ConversationNote(models.Model):
         ordering = ["-created_at"]
 
     def __str__(self):
-        return f"Note by {self.author.get_full_name() or self.author.username} in {self.conversation.conversation_id}"
+        author_name = self.author.get_full_name() or self.author.username
+        return f"Note by {author_name} in {self.conversation.conversation_id}"

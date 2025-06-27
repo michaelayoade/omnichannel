@@ -1,4 +1,4 @@
-"""email_integration.channels.registry
+"""email_integration.channels.registry.
 
 Central registry for mapping channel keys to concrete adapter implementations.
 This allows for a decoupled, dependency-injection-style architecture where
@@ -14,7 +14,7 @@ To register a new channel:
 from __future__ import annotations
 
 import logging
-from typing import Type, Union
+from typing import Union
 
 from ..models import EmailAccount
 from .adapters.base import BaseInboundAdapter, BaseOutboundAdapter
@@ -24,7 +24,7 @@ from .services.smtp_service import SMTPService
 logger = logging.getLogger(__name__)
 
 # Type alias for adapter classes
-AdapterClass = Union[Type[BaseInboundAdapter], Type[BaseOutboundAdapter]]
+AdapterClass = Union[type[BaseInboundAdapter], type[BaseOutboundAdapter]]
 
 # Central registry mapping channel keys to adapter classes
 CHANNEL_REGISTRY: dict[str, AdapterClass] = {
@@ -34,19 +34,23 @@ CHANNEL_REGISTRY: dict[str, AdapterClass] = {
 
 
 def get_adapter(
-    channel_key: str, account: EmailAccount
-) -> Union[BaseInboundAdapter, BaseOutboundAdapter]:
+    channel_key: str, account: EmailAccount,
+) -> BaseInboundAdapter | BaseOutboundAdapter:
     """Factory function to get an instantiated channel adapter.
 
     Args:
+    ----
         channel_key: The channel identifier (e.g., 'imap', 'smtp').
         account: The EmailAccount instance to pass to the adapter.
 
     Returns:
+    -------
         An instantiated adapter instance.
 
     Raises:
+    ------
         ValueError: If the channel_key is not found in the registry.
+
     """
     adapter_class = CHANNEL_REGISTRY.get(channel_key)
 

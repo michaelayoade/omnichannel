@@ -8,7 +8,7 @@ __all__ = ["EmailBounce"]
 
 class EmailBounce(models.Model):
     message = models.OneToOneField(
-        EmailMessage, on_delete=models.CASCADE, related_name="bounce"
+        EmailMessage, on_delete=models.CASCADE, related_name="bounce",
     )
     bounce_type = models.CharField(max_length=20, choices=BounceType.choices)
     bounced_email = models.EmailField()

@@ -5,12 +5,13 @@ from email.mime.base import MIMEBase
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.utils import formataddr, make_msgid
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 from django.core.files.base import ContentFile
 from django.template import Context, Template
 from django.utils import timezone
 
+from email_integration import models
 from email_integration.channels.adapters.base import BaseOutboundAdapter
 from email_integration.exceptions import (
     AuthenticationError,
@@ -29,8 +30,7 @@ logger = logging.getLogger(__name__)
 
 
 class SMTPService(BaseOutboundAdapter):
-    """
-    SMTP service for sending emails through configured email accounts.
+    """SMTP service for sending emails through configured email accounts.
     Supports HTML/plain text emails, attachments, and template rendering.
     """
 
@@ -44,7 +44,7 @@ class SMTPService(BaseOutboundAdapter):
         try:
             if self.account.smtp_use_ssl:
                 smtp = smtplib.SMTP_SSL(
-                    self.account.smtp_server, self.account.smtp_port
+                    self.account.smtp_server, self.account.smtp_port,
                 )
             else:
                 smtp = smtplib.SMTP(self.account.smtp_server, self.account.smtp_port)
@@ -70,28 +70,28 @@ class SMTPService(BaseOutboundAdapter):
             return True
         except (AuthenticationError, ConnectionError) as e:
             logger.warning(
-                "Credential validation failed for account %s: %s", self.account_id, e
+                "Credential validation failed for account %s: %s", self.account_id, e,
             )
             return False
 
     def send(
         self,
-        to_emails: List[str],
+        to_emails: list[str],
         subject: str,
-        plain_body: Optional[str] = None,
-        html_body: Optional[str] = None,
-        attachments: Optional[List[Dict[str, Any]]] = None,
+        plain_body: str | None = None,
+        html_body: str | None = None,
+        attachments: list[dict[str, Any]] | None = None,
         **kwargs: Any,
     ) -> EmailMessage:
         # Extract additional parameters from kwargs for backward compatibility
         # and specific SMTP features.
-        cc_emails: Optional[List[str]] = kwargs.get("cc_emails")
-        bcc_emails: Optional[List[str]] = kwargs.get("bcc_emails")
-        reply_to: Optional[str] = kwargs.get("reply_to")
-        template_id: Optional[int] = kwargs.get("template_id")
-        template_context: Optional[Dict[str, Any]] = kwargs.get("template_context")
-        in_reply_to: Optional[str] = kwargs.get("in_reply_to")
-        references: Optional[str] = kwargs.get("references")
+        cc_emails: list[str] | None = kwargs.get("cc_emails")
+        bcc_emails: list[str] | None = kwargs.get("bcc_emails")
+        reply_to: str | None = kwargs.get("reply_to")
+        template_id: int | None = kwargs.get("template_id")
+        template_context: dict[str, Any] | None = kwargs.get("template_context")
+        in_reply_to: str | None = kwargs.get("in_reply_to")
+        references: str | None = kwargs.get("references")
         priority: str = kwargs.get("priority", "normal")
         """
         Send an email through the SMTP service.
@@ -104,7 +104,8 @@ class SMTPService(BaseOutboundAdapter):
             cc_emails: CC recipients
             bcc_emails: BCC recipients
             reply_to: Reply-to address
-            attachments: List of attachment dicts with 'content', 'filename', 'content_type'
+            attachments: List of attachment dicts with 'content', 'filename',
+                'content_type'
             template_id: Email template ID to use
             template_context: Context variables for template rendering
             in_reply_to: Message ID this email replies to
@@ -121,10 +122,10 @@ class SMTPService(BaseOutboundAdapter):
             if template_context:
                 subject = self._render_template(template.subject, template_context)
                 plain_body = self._render_template(
-                    template.plain_content, template_context
+                    template.plain_content, template_context,
                 )
                 html_body = self._render_template(
-                    template.html_content, template_context
+                    template.html_content, template_context,
                 )
             else:
                 subject = template.subject
@@ -134,7 +135,7 @@ class SMTPService(BaseOutboundAdapter):
         # Generate message ID and thread ID
         message_id = make_msgid()
         thread_id = self.thread_parser.generate_thread_id(
-            subject, in_reply_to, references
+            subject, in_reply_to, references,
         )
 
         # Create email message record
@@ -209,11 +210,11 @@ class SMTPService(BaseOutboundAdapter):
             email_message.error_code = "channel_error"
             email_message.save()
             logger.error(
-                f"SMTP channel error for account {self.account.email_address}: {e}"
+                f"SMTP channel error for account {self.account.email_address}: {e}",
             )
             raise  # Re-raise to be handled by the Celery task
 
-        except smtplib.SMTPException as e:
+        except (smtplib.SMTPException, SendingError) as e:
             # Errors during the sending process
             email_message.status = "failed"
             email_message.failed_at = timezone.now()
@@ -231,28 +232,27 @@ class SMTPService(BaseOutboundAdapter):
             email_message.error_code = "unexpected_error"
             email_message.save()
             logger.error(
-                f"An unexpected error occurred while sending email {message_id}: {e}"
+                f"An unexpected error occurred while sending email {message_id}: {e}",
             )
             raise SendingError(
-                f"An unexpected error occurred while sending email: {e}"
+                f"An unexpected error occurred while sending email: {e}",
             ) from e
 
     def _create_mime_message(
         self,
-        to_emails: List[str],
+        to_emails: list[str],
         subject: str,
-        plain_body: str = None,
-        html_body: str = None,
-        cc_emails: List[str] = None,
-        bcc_emails: List[str] = None,
-        reply_to: str = None,
-        message_id: str = None,
-        in_reply_to: str = None,
-        references: str = None,
+        plain_body: str | None = None,
+        html_body: str | None = None,
+        cc_emails: list[str] | None = None,
+        bcc_emails: list[str] | None = None,
+        reply_to: str | None = None,
+        message_id: str | None = None,
+        in_reply_to: str | None = None,
+        references: str | None = None,
         priority: str = "normal",
     ) -> MIMEMultipart:
         """Create MIME message with headers."""
-
         # Determine message type
         if html_body and plain_body:
             msg = MIMEMultipart("alternative")
@@ -261,7 +261,7 @@ class SMTPService(BaseOutboundAdapter):
 
         # Set basic headers
         msg["From"] = formataddr(
-            (self.account.display_name, self.account.email_address)
+            (self.account.display_name, self.account.email_address),
         )
         msg["To"] = ", ".join(to_emails)
         msg["Subject"] = subject
@@ -301,7 +301,7 @@ class SMTPService(BaseOutboundAdapter):
         return msg
 
     def _add_attachments(
-        self, msg: MIMEMultipart, email_message: EmailMessage, attachments: List[Dict]
+        self, msg: MIMEMultipart, email_message: EmailMessage, attachments: list[dict],
     ):
         """Add attachments to email message."""
         for attachment in attachments:
@@ -325,11 +325,11 @@ class SMTPService(BaseOutboundAdapter):
                 # Set headers
                 filename = attachment.get("filename", "attachment")
                 content_type = attachment.get(
-                    "content_type", "application/octet-stream"
+                    "content_type", "application/octet-stream",
                 )
 
                 part.add_header(
-                    "Content-Disposition", f'attachment; filename="{filename}"'
+                    "Content-Disposition", f'attachment; filename="{filename}"',
                 )
                 part.add_header("Content-Type", content_type)
 
@@ -351,7 +351,7 @@ class SMTPService(BaseOutboundAdapter):
                 logger.error(f"Error adding attachment {attachment}: {e}")
 
     def _add_signature_and_footer(
-        self, msg: MIMEMultipart, email_message: EmailMessage
+        self, msg: MIMEMultipart, email_message: EmailMessage,
     ):
         """Add signature and footer to email message."""
         try:
@@ -385,7 +385,7 @@ class SMTPService(BaseOutboundAdapter):
                         )
                         if "</body>" in content:
                             content = content.replace(
-                                "</body>", f"{signature_html}</body>"
+                                "</body>", f"{signature_html}</body>",
                             )
                         else:
                             content += signature_html
@@ -394,7 +394,7 @@ class SMTPService(BaseOutboundAdapter):
                         footer_html = f'<div class="footer"><br><br>{footer}</div>'
                         if "</body>" in content:
                             content = content.replace(
-                                "</body>", f"{footer_html}</body>"
+                                "</body>", f"{footer_html}</body>",
                             )
                         else:
                             content += footer_html
@@ -407,7 +407,7 @@ class SMTPService(BaseOutboundAdapter):
         except Exception as e:
             logger.error(f"Error adding signature/footer: {e}")
 
-    def _render_template(self, template_content: str, context: Dict) -> str:
+    def _render_template(self, template_content: str, context: dict) -> str:
         """Render template with context variables."""
         try:
             template = Template(template_content)
@@ -420,11 +420,10 @@ class SMTPService(BaseOutboundAdapter):
         self,
         original_message: EmailMessage,
         reply_body: str,
-        reply_html: str = None,
-        attachments: List[Dict] = None,
+        reply_html: str | None = None,
+        attachments: list[dict] | None = None,
     ) -> EmailMessage:
         """Send a reply to an existing email message."""
-
         # Build reply subject
         subject = original_message.subject
         if not subject.lower().startswith("re:"):
@@ -450,13 +449,12 @@ class SMTPService(BaseOutboundAdapter):
     def send_forward(
         self,
         original_message: EmailMessage,
-        to_emails: List[str],
-        forward_body: str = None,
-        forward_html: str = None,
+        to_emails: list[str],
+        forward_body: str | None = None,
+        forward_html: str | None = None,
         include_attachments: bool = True,
     ) -> EmailMessage:
         """Forward an existing email message."""
-
         # Build forward subject
         subject = original_message.subject
         if not subject.lower().startswith("fwd:"):
@@ -473,10 +471,7 @@ class SMTPService(BaseOutboundAdapter):
         forward_text += f"To: {', '.join(original_message.to_emails)}\n\n"
         forward_text += original_body
 
-        if forward_body:
-            final_body = forward_body + forward_text
-        else:
-            final_body = forward_text
+        final_body = forward_body + forward_text if forward_body else forward_text
 
         # Include attachments if requested
         attachments = []
@@ -489,7 +484,7 @@ class SMTPService(BaseOutboundAdapter):
                                 "content": f.read(),
                                 "filename": attachment.filename,
                                 "content_type": attachment.content_type,
-                            }
+                            },
                         )
 
         return self.send_email(
@@ -500,7 +495,7 @@ class SMTPService(BaseOutboundAdapter):
             attachments=attachments,
         )
 
-    def test_connection(self) -> Tuple[bool, str]:
+    def test_connection(self) -> tuple[bool, str]:
         """Test SMTP connection and authentication."""
         try:
             with self._create_smtp_connection() as smtp:
@@ -510,19 +505,20 @@ class SMTPService(BaseOutboundAdapter):
         except SMTPError as e:
             return False, e.message
         except Exception as e:
-            return False, f"Connection test failed: {str(e)}"
+            return False, f"Connection test failed: {e!s}"
 
 
 class EmailTemplateService:
     """Service for managing email templates."""
 
     @staticmethod
-    def render_template(template: EmailTemplate, context: Dict) -> Tuple[str, str, str]:
-        """
-        Render email template with context.
+    def render_template(template: EmailTemplate, context: dict) -> tuple[str, str, str]:
+        """Render email template with context.
 
-        Returns:
+        Returns
+        -------
             Tuple of (subject, plain_body, html_body)
+
         """
         try:
             # Render subject
@@ -549,7 +545,7 @@ class EmailTemplateService:
 
     @staticmethod
     def create_auto_reply_template(
-        account: EmailAccount, subject: str, content: str
+        account: EmailAccount, subject: str, content: str,
     ) -> EmailTemplate:
         """Create an auto-reply template for an account."""
         return EmailTemplate.objects.create(
@@ -564,11 +560,11 @@ class EmailTemplateService:
 
     @staticmethod
     def get_templates_for_account(
-        account: EmailAccount, template_type: str = None
-    ) -> List[EmailTemplate]:
+        account: EmailAccount, template_type: str | None = None,
+    ) -> list[EmailTemplate]:
         """Get available templates for an account."""
         queryset = EmailTemplate.objects.filter(
-            models.Q(account=account) | models.Q(is_global=True), is_active=True
+            models.Q(account=account) | models.Q(is_global=True), is_active=True,
         )
 
         if template_type:
@@ -579,10 +575,10 @@ class EmailTemplateService:
 
 def send_email_async(
     account_id: int,
-    to_emails: List[str],
+    to_emails: list[str],
     subject: str,
-    plain_body: str = None,
-    html_body: str = None,
+    plain_body: str | None = None,
+    html_body: str | None = None,
     **kwargs,
 ):
     """Utility function to send email asynchronously via Celery."""

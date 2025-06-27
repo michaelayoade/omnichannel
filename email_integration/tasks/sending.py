@@ -11,20 +11,21 @@ logger = ContextLogger(__name__)
 
 
 @shared_task(
-    bind=True, max_retries=config.MAX_RETRIES, default_retry_delay=config.RETRY_DELAY
+    bind=True, max_retries=config.MAX_RETRIES, default_retry_delay=config.RETRY_DELAY,
 )
 @with_request_id
 def send_email_task(self, account_id, message_data, _request_id=None):
-    """
-    Celery task to send an email asynchronously.
+    """Celery task to send an email asynchronously.
 
     This task is a thin wrapper around the message_service.send_message service.
     It handles transient connection errors with retries.
 
     Args:
+    ----
         account_id: ID of the email account to send from
         message_data: Dictionary with message data (recipient, subject, body, etc.)
         _request_id: Optional request ID for logging context
+
     """
     # Set task context for all log messages from this task
     task_id = self.request.id
@@ -54,7 +55,7 @@ def send_email_task(self, account_id, message_data, _request_id=None):
     except EmailAccount.DoesNotExist:
         # Account not found - log and abort
         logger.warning(
-            "Email account not found or inactive", extra={"account_id": account_id}
+            "Email account not found or inactive", extra={"account_id": account_id},
         )
         return {"success": False, "error": "account_not_found"}
 

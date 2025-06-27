@@ -1,5 +1,4 @@
-"""
-WSGI config for omnichannel_core project.
+"""WSGI config for omnichannel_core project.
 
 It exposes the WSGI callable as a module-level variable named ``application``.
 
