@@ -10,6 +10,7 @@ A Django-based omnichannel communication platform that integrates with Splynx IS
 - **Real-time Messaging**: WebSocket support for real-time communication
 - **Customer Management**: Unified customer profiles across all channels
 - **Conversation Tracking**: Complete conversation history and analytics
+- **Security-First Design**: Secure cryptographic practices, proper rate limiting, and input validation
 
 ## Project Structure
 
@@ -123,6 +124,30 @@ Configure your Splynx API credentials in the `.env` file to enable synchronizati
 1. Add new sync types to `SplynxSyncLog`
 2. Create corresponding mapping models
 3. Implement sync tasks in Celery
+
+### Security & Code Quality
+See [Security Improvements Documentation](docs/security-improvements.md) for details on:
+- Security audits and fixes
+- Magic number elimination 
+- Type hints and modern Python syntax
+- Control flow improvements
+- Development best practices
+
+## Running Tests & Checks
+
+```bash
+# Run the full test suite
+python manage.py test
+
+# Run security checks
+bandit -r . --exclude .venv,migrations,tests
+
+# Run code quality checks
+ruff .
+
+# Run type checking
+mypy .
+```
 
 ## Next Steps
 
