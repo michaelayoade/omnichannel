@@ -2,7 +2,7 @@ import { useEffect, useState, useRef, useCallback } from 'react';
 import { getMessages, connectToConversation, sendMessage } from '../api';
 import QuickReplySelector from './QuickReplySelector';
 import { AiOutlineCheck, AiOutlineDoubleRight } from 'react-icons/ai';
-import { BsFillCheckAllCircleFill } from 'react-icons/bs';
+import { BsFillCheckCircleFill } from 'react-icons/bs';
 import { useToast } from '../context/ToastContext';
 import { sanitizeInput } from '../utils/validation';
 
@@ -219,7 +219,7 @@ export default function ChatWindow({ selectedConversationId }) {
                   {msg.status === 'sending' && <AiOutlineDoubleRight className="inline" />}
                   {msg.status === 'sent' && <AiOutlineCheck className="inline" />}
                   {msg.status === 'delivered' && <AiOutlineDoubleRight className="inline" />}
-                  {msg.status === 'read' && <BsFillCheckAllCircleFill className="inline text-blue-400" />}
+                  {msg.status === 'read' && <BsFillCheckCircleFill className="inline text-blue-400" />}
                 </span>
               )}
             </div>
