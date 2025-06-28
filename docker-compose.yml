@@ -137,6 +137,8 @@ services:
     build:
       context: ./frontend/agent-dashboard
       dockerfile: ./docker/Dockerfile
+      args:
+        - VITE_API_BASE_URL=http://149.102.135.97:8000/api
     environment:
       - VITE_API_BASE_URL=http://149.102.135.97:8000/api
     ports:
