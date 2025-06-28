@@ -45,10 +45,15 @@ class QuickReplyTemplateSerializer(serializers.ModelSerializer):
 
 class AgentProfileSerializer(serializers.ModelSerializer):
     user = AgentSerializer(read_only=True)
+    groups = serializers.SerializerMethodField()
 
     class Meta:
         model = AgentProfile
-        fields = ("id", "user", "status", "current_conversation_count")
+        fields = "__all__"
+
+    def get_groups(self, obj):
+        """Return the user's group names"""
+        return [group.name for group in obj.user.groups.all()]
 
 
 class AgentPerformanceSnapshotSerializer(serializers.ModelSerializer):

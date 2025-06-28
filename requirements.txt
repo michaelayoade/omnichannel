@@ -11,6 +11,10 @@ django-filter==23.5
 celery==5.3.4
 redis==5.0.1
 
+# Caching
+django-redis==5.4.0
+hiredis==2.2.3
+
 # WebSocket support
 channels==4.0.0
 channels-redis==4.1.0
@@ -46,6 +50,8 @@ gunicorn==23.0.0
 
 # Monitoring & Logging
 sentry-sdk==1.40.6
+flower==2.0.1
+python-json-logger==2.0.7
 
 # Testing & Quality Tools
 coverage==7.2.7

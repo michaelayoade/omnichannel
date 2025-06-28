@@ -1,0 +1,39 @@
+{
+  "short_name": "Omnichannel",
+  "name": "Omnichannel Agent Dashboard",
+  "icons": [
+    {
+      "src": "assets/images/icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "assets/images/icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "theme_color": "#1a56db",
+  "background_color": "#f9fafb",
+  "orientation": "portrait",
+  "description": "Unified agent dashboard for omnichannel customer communications",
+  "shortcuts": [
+    {
+      "name": "Active Conversations",
+      "short_name": "Active",
+      "url": "/?filter=active",
+      "icons": [{ "src": "assets/images/icon-active.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "Pending Conversations",
+      "short_name": "Pending",
+      "url": "/?filter=pending",
+      "icons": [{ "src": "assets/images/icon-pending.png", "sizes": "96x96" }]
+    }
+  ]
+}

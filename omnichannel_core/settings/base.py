@@ -10,9 +10,14 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
 import sys
+import logging.config
 from pathlib import Path
 
+import sentry_sdk
 from decouple import config
+from sentry_sdk.integrations.django import DjangoIntegration
+from sentry_sdk.integrations.logging import LoggingIntegration
+from sentry_sdk.integrations.redis import RedisIntegration
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
@@ -49,6 +54,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     # Third party apps
     "rest_framework",
+    "rest_framework_simplejwt",
     "corsheaders",
     "django_extensions",
     "django_filters",
@@ -189,6 +195,26 @@ CHANNEL_LAYERS = {
 }
 
 
+# Cache Configuration
+CACHES = {
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": config("REDIS_URL", default="redis://localhost:6379/2"),
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+            "PARSER_CLASS": "redis.connection.HiredisParser",
+            "SOCKET_CONNECT_TIMEOUT": 5,
+            "SOCKET_TIMEOUT": 5,
+            "COMPRESSOR": "django_redis.compressors.zlib.ZlibCompressor",
+        },
+        "KEY_PREFIX": "omnichannel",
+    }
+}
+
+# Cache time for different views (in seconds)
+API_CACHE_SECONDS = config("API_CACHE_SECONDS", default=60, cast=int)  # 1 minute default
+STATIC_CACHE_SECONDS = config("STATIC_CACHE_SECONDS", default=86400, cast=int)  # 24 hours default
+
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
 
@@ -206,6 +232,7 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 # Django REST Framework
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
+        "omnichannel_core.auth.JWTCookieAuthentication",
         "rest_framework.authentication.SessionAuthentication",
         "rest_framework.authentication.TokenAuthentication",
     ],
@@ -215,6 +242,37 @@ REST_FRAMEWORK = {
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
     "PAGE_SIZE": 20,
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+    
+    # Rate limiting
+    "DEFAULT_THROTTLE_CLASSES": [
+        "rest_framework.throttling.ScopedRateThrottle",
+    ],
+    "DEFAULT_THROTTLE_RATES": {
+        "anon": config("THROTTLE_RATE_ANON", default="20/minute"),
+        "user": config("THROTTLE_RATE_USER", default="120/minute"),
+        "auth": config("THROTTLE_RATE_AUTH", default="10/minute"),
+    },
+}
+
+from datetime import timedelta
+
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=60),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
+    "ROTATE_REFRESH_TOKENS": True,
+    "BLACKLIST_AFTER_ROTATION": True,
+    # Cookie settings
+    "AUTH_COOKIE": "access_token",
+    "AUTH_COOKIE_REFRESH": "refresh_token",
+    "AUTH_COOKIE_DOMAIN": None,
+    "AUTH_COOKIE_SECURE": config("JWT_COOKIE_SECURE", default=True, cast=bool),
+    "AUTH_COOKIE_HTTP_ONLY": True,
+    "AUTH_COOKIE_PATH": "/",
+    "AUTH_COOKIE_SAMESITE": config("JWT_COOKIE_SAMESITE", default="Lax", cast=str),
+    # Use cookies in auth_header
+    "AUTH_HEADER_TYPES": ("Bearer",),
+    "AUTH_HEADER_NAME": "HTTP_AUTHORIZATION",
+    "AUTH_COOKIE_DOMAIN": None,
 }
 
 # CORS settings
@@ -260,6 +318,93 @@ CELERY_TIMEZONE = "UTC"
 # Field Encryption
 # To generate a new key, run:
 # from cryptography.fernet import Fernet
+
+# Sentry Configuration
+SENTRY_DSN = config('SENTRY_DSN', default=None)
+if SENTRY_DSN:
+    sentry_logging = LoggingIntegration(
+        level=logging.INFO,        # Capture info and above as breadcrumbs
+        event_level=logging.ERROR  # Send errors as events
+    )
+    
+    sentry_sdk.init(
+        dsn=SENTRY_DSN,
+        integrations=[
+            DjangoIntegration(),
+            RedisIntegration(),
+            sentry_logging,
+        ],
+        # Set traces_sample_rate to 1.0 to capture 100%
+        # of transactions for performance monitoring.
+        traces_sample_rate=config('SENTRY_TRACES_SAMPLE_RATE', default=0.2, cast=float),
+        # Send 20% of performance traces by default
+        
+        # If you wish to associate users to errors
+        send_default_pii=True,
+        
+        # By default the SDK will try to use the SENTRY_RELEASE
+        # environment variable, or infer a git commit
+        # SHA as release, however you may want to set
+        # something more human-readable.
+        release="omnichannel-mvp@1.0.0",  # Should use CI/CD to populate this
+        
+        # Environment name
+        environment=config('ENVIRONMENT', default='development'),
+    )
+
+# Structured Logging Configuration
+LOG_LEVEL = config('LOG_LEVEL', default='INFO').upper()
+LOG_FORMAT = config('LOG_FORMAT', default='json')
+STRUCTURED_LOGGING = config('STRUCTURED_LOGGING', default=True, cast=bool)
+
+logging_handlers = ['console']
+logging_formatters = {
+    'verbose': {
+        'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
+        'style': '{',
+    },
+    'simple': {
+        'format': '{levelname} {message}',
+        'style': '{',
+    },
+    'json': {
+        '()': 'pythonjsonlogger.jsonlogger.JsonFormatter',
+        'format': '%(asctime)s %(name)s %(levelname)s %(message)s',
+    }
+}
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': logging_formatters,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'json' if STRUCTURED_LOGGING and LOG_FORMAT == 'json' else 'verbose',
+        },
+    },
+    'root': {
+        'handlers': logging_handlers,
+        'level': LOG_LEVEL,
+    },
+    'loggers': {
+        'django': {
+            'handlers': logging_handlers,
+            'level': LOG_LEVEL,
+            'propagate': False,
+        },
+        'django.db.backends': {
+            'handlers': logging_handlers,
+            'level': 'WARNING',
+            'propagate': False,
+        },
+        'omnichannel_core': {
+            'handlers': logging_handlers,
+            'level': LOG_LEVEL,
+            'propagate': False,
+        },
+    },
+}
 # Fernet.generate_key().decode()
 FIELD_ENCRYPTION_KEY = config(
     "FIELD_ENCRYPTION_KEY", default="T6u_w-OnGv0_z-v2_A-Zg3p_y-q_x-r_S-t_U-v_W-x_Y-z=",

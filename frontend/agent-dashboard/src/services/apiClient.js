@@ -1,8 +1,9 @@
 /**
  * API Client Service
- * Centralized API handling with error management and request/response interceptors
+ * Centralized API handling with error management, request/response interceptors,
+ * and automatic token refresh
  */
-import { useToast } from '../components/ToastContainer';
+import { useToast } from '../context/ToastContext';
 
 // Get API base URL from environment variables
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
@@ -35,7 +36,7 @@ class ApiClient {
 
       if (status === 401 || status === 403) {
         errorMessage = 'Authentication error. Please log in again.';
-        // Could trigger auth refresh or logout here
+        // Auth error handling is now in the request method with refresh token logic
       } else if (status === 404) {
         errorMessage = 'Resource not found';
       } else if (status >= 500) {
@@ -59,32 +60,27 @@ class ApiClient {
   }
 
   /**
-   * Prepare headers with auth token if available
+   * Prepare headers for API requests
    */
   getHeaders() {
-    const headers = {
+    // We no longer need Authorization headers with cookie auth
+    // as cookies are automatically sent with the request
+    return {
       'Content-Type': 'application/json',
     };
-
-    // Add auth token if available
-    const token = localStorage.getItem('authToken');
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-    }
-
-    return headers;
   }
 
   /**
-   * Make API request with error handling
+   * Make API request with error handling and automatic token refresh
    */
-  async request(endpoint, options = {}) {
+  async request(endpoint, options = {}, isRefreshAttempt = false) {
     try {
       const url = `${this.baseUrl}${endpoint}`;
       const headers = this.getHeaders();
 
       const response = await fetch(url, {
         ...options,
+        credentials: 'include', // Important: include cookies in requests
         headers: {
           ...headers,
           ...options.headers,
@@ -92,6 +88,28 @@ class ApiClient {
       });
 
       if (!response.ok) {
+        // Handle 401 by attempting token refresh once
+        if (response.status === 401 && !isRefreshAttempt) {
+          try {
+            // Try to refresh the token
+            await this.refreshToken();
+            
+            // Retry the original request after token refresh
+            return this.request(endpoint, options, true);
+          } catch (refreshError) {
+            // If refresh fails, throw original error
+            console.error('Token refresh failed:', refreshError);
+            
+            // Dispatch event that auth failed (for logout)
+            const authFailedEvent = new CustomEvent('auth:failed');
+            window.dispatchEvent(authFailedEvent);
+            
+            // Throw original error
+            const errorData = await response.json().catch(() => ({}));
+            throw { response: { status: response.status, data: errorData } };
+          }
+        }
+        
         const errorData = await response.json().catch(() => ({}));
         throw { response: { status: response.status, data: errorData } };
       }
@@ -143,6 +161,25 @@ class ApiClient {
     });
   }
 }
+
+// Add refresh token method to ApiClient
+ApiClient.prototype.refreshToken = async function() {
+  const url = `${this.baseUrl}/auth/token/refresh/`;
+  
+  const response = await fetch(url, {
+    method: 'POST',
+    credentials: 'include', // Important: send cookies
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+  
+  if (!response.ok) {
+    throw new Error('Token refresh failed');
+  }
+  
+  return await response.json();
+};
 
 // Create singleton instance
 const apiClient = new ApiClient();

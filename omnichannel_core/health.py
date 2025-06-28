@@ -1,6 +1,7 @@
 """Health check endpoints for monitoring the application status."""
 
 import logging
+import redis
 
 from django.conf import settings
 from django.contrib.auth.models import User
@@ -36,6 +37,18 @@ def check_auth() -> dict[str, bool | str]:
         return {"status": False, "message": f"Auth system error: {e!s}"}
 
 
+def check_redis() -> dict[str, bool | str]:
+    """Check Redis connectivity."""
+    try:
+        redis_url = settings.REDIS_URL
+        r = redis.from_url(redis_url)
+        r.ping()
+        return {"status": True, "message": "Redis connection successful"}
+    except Exception as e:
+        logger.error(f"Redis health check failed: {e!s}")
+        return {"status": False, "message": f"Redis error: {e!s}"}
+
+
 @require_GET
 @cache_page(30)  # Cache results for 30 seconds
 def health_check(request) -> JsonResponse:
@@ -51,6 +64,10 @@ def health_check(request) -> JsonResponse:
 
     auth_check = check_auth()
     checks.append({"name": "auth", "result": auth_check})
+    
+    # Add Redis check
+    redis_check = check_redis()
+    checks.append({"name": "redis", "result": redis_check})
 
     # Application version
     app_version = getattr(settings, "APP_VERSION", "dev")
@@ -77,13 +94,22 @@ def readiness_check(request) -> JsonResponse:
     Used by Kubernetes or other orchestration tools to determine if
     the app is ready to receive requests.
     """
-    # Basic implementation - just check database connectivity
+    # Check all critical dependencies
     db_check = check_database()
+    redis_check = check_redis()
+    
+    all_services_ready = db_check["status"] and redis_check["status"]
 
-    if db_check["status"]:
+    if all_services_ready:
         return JsonResponse({"status": "ready"})
     else:
+        reasons = []
+        if not db_check["status"]:
+            reasons.append(f"Database: {db_check['message']}")
+        if not redis_check["status"]:
+            reasons.append(f"Redis: {redis_check['message']}")
+            
         return JsonResponse(
-            {"status": "not ready", "reason": db_check["message"]},
+            {"status": "not ready", "reasons": reasons},
             status=503,
         )

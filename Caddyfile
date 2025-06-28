@@ -1,0 +1,23 @@
+{
+  email you@example.com
+}
+
+# Replace with your actual domain
+chat.example.com {
+  reverse_proxy /api/* backend:8000
+  reverse_proxy /ws/* backend:8000
+  reverse_proxy /flower/* flower:5555 {
+    header_up Host {upstream_hostport}
+    header_up X-Real-IP {remote_host}
+    header_up X-Forwarded-For {remote_host}
+    header_up X-Forwarded-Proto {scheme}
+  }
+  reverse_proxy frontend:80
+  encode gzip
+  header {
+    Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+    X-Content-Type-Options "nosniff"
+    X-Frame-Options "DENY"
+    Referrer-Policy "same-origin"
+  }
+}

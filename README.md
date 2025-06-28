@@ -113,6 +113,69 @@ Required for Celery and Channels. Install Redis and configure the `REDIS_URL` in
 ### Splynx Integration
 Configure your Splynx API credentials in the `.env` file to enable synchronization.
 
+## Performance, Caching & Observability
+
+The backend integrates Redis (DB 2) as a dedicated **cache** instance distinct from the Celery broker (DB 1). Key parts:
+
+1. **Settings** – `CACHES['default']` configured via `REDIS_CACHE_URL` with compression + sensible timeouts.
+2. **Utility** – `omnichannel_core.cache.cached_response` decorator caches expensive GET view responses and handles invalidation helpers (`invalidate_model_cache`).
+3. **Timeouts** – Controlled by env vars `API_CACHE_SECONDS` (default 60s) and `STATIC_CACHE_SECONDS` (default 1 day).
+4. **Docker** – `redis-cache` service added with memory limits (`maxmemory 256mb`, LRU eviction).
+5. **Observability** – Sentry SDK, structured logging (`python-json-logger`), Flower dashboard for Celery.
+
+---
+
+## Progressive Web App (PWA)
+
+Front-end now installs as a PWA:
+* Offline support via **service-worker.js**
+* Static assets: *cache-first*; API calls: *network-first* fallback.
+* `UpdateNotification` toast prompts user to refresh when a new version is available.
+* `NetworkStatus` toast alerts on offline / online.
+* Manifest and meta-tags added in `index.html`.
+
+---
+
+## Role-Based Access Control (RBAC)
+
+Three Django groups are provisioned automatically by migration **0003_create_default_user_groups**:
+
+| Group | Typical User | Permissions |
+|-------|--------------|-------------|
+| **Agent** | Support agent | Read/modify own conversations & messages, manage quick-reply templates |
+| **Supervisor** | Team lead | All agent rights **+** create/delete conversations, view performance snapshots |
+| **Admin** | System admin | Full CRUD on all models + system settings |
+
+Custom permission classes in `agent_hub/permissions.py` enforce this in each DRF viewset. Front-end hook `useRoles` exposes groups; `RoleBasedRoute` protects pages.
+
+*Seed users for local testing* (created by `create_test_users.py`):
+```
+admin / admin123
+supervisor / super123
+agent / agent123
+```
+
+---
+
+## Docker-Compose Quick Start
+
+```bash
+# Build & start all services (backend, frontend, redis, redis-cache, db, caddy)
+docker-compose up -d --build
+
+# Apply migrations & seed test data
+docker-compose exec backend python manage.py migrate
+docker-compose exec backend python create_test_users.py
+```
+
+Access points:
+* Backend API → `http://localhost:8000/api/`
+* Swagger → `/api/schema/swagger-ui/`
+* Front-end → `http://localhost:3000`
+* Flower (task queue monitoring) → `http://localhost:5555`
+
+---
+
 ## Development
 
 ### Adding New Channels

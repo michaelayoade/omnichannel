@@ -21,9 +21,11 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path
+from rest_framework_simplejwt.views import TokenRefreshView
 
 from .health import health_check, readiness_check
 from .views import CustomLoginView
+from .views_auth import CookieTokenObtainPairView, CookieTokenRefreshView
 
 urlpatterns = [
     # Admin and authentication
@@ -34,6 +36,18 @@ urlpatterns = [
     # Health check endpoints for monitoring
     path("healthz/", health_check, name="health_check"),
     path("readyz/", readiness_check, name="readiness_check"),
+
+    # Auth endpoints
+    path(
+        "api/auth/token/",
+        CookieTokenObtainPairView.as_view(),
+        name="token_obtain_pair",
+    ),
+    path(
+        "api/auth/token/refresh/",
+        CookieTokenRefreshView.as_view(),
+        name="token_refresh",
+    ),
 
     # API endpoints
     path("api/whatsapp/", include("whatsapp_integration.urls")),

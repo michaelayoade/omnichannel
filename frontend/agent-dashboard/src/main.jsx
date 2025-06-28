@@ -7,6 +7,39 @@ import { BrowserRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import ErrorBoundary from './components/ErrorBoundary';
 import { ToastProvider } from './context/ToastContext';
+import { RoleProvider } from './hooks/useRoles';
+
+// Initialize monitoring
+import sentryService from './services/sentryService';
+
+// Initialize Sentry as early as possible
+sentryService.init();
+
+// Register service worker for PWA support
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/service-worker.js')
+      .then(registration => {
+        console.log('Service Worker registered with scope:', registration.scope);
+        
+        // Check for service worker updates
+        registration.addEventListener('updatefound', () => {
+          const newWorker = registration.installing;
+          
+          newWorker.addEventListener('statechange', () => {
+            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+              // New service worker available - show update notification
+              window.dispatchEvent(new CustomEvent('serviceWorkerUpdateAvailable', { detail: registration }));
+            }
+          });
+        });
+      })
+      .catch(error => {
+        console.error('Service Worker registration failed:', error);
+        sentryService.captureException(error);
+      });
+  });
+}
 
 // Configure React Query with defaults for better error handling
 const queryClient = new QueryClient({
@@ -61,15 +94,15 @@ const logErrorToService = (error, errorInfo) => {
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <ToastProvider>
-    <ErrorBoundary onError={logErrorToService}>
-      
+      <ErrorBoundary onError={logErrorToService}>
         <QueryClientProvider client={queryClient}>
           <BrowserRouter>
-            <App />
+            <RoleProvider>
+              <App />
+            </RoleProvider>
           </BrowserRouter>
         </QueryClientProvider>
-      
-    </ErrorBoundary>
-  </ToastProvider>
+      </ErrorBoundary>
+    </ToastProvider>
   </React.StrictMode>,
 );

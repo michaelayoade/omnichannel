@@ -1,9 +1,12 @@
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render
-from rest_framework import permissions, status, viewsets
+from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.response import Response
+
+from omnichannel_core.cache import cached_response, invalidate_model_cache
+from .permissions import IsAgent, IsSupervisor, IsAdmin, IsAgentOrReadOnly, IsSupervisorOrReadOnly, IsAdminOrReadOnly
 
 from . import services
 from .models import (
@@ -27,7 +30,7 @@ class ConversationViewSet(viewsets.ModelViewSet):
 
     queryset = Conversation.objects.all()
     serializer_class = ConversationSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsAgent]
 
     def get_queryset(self):
         """This view should return a list of all the conversations
@@ -35,15 +38,32 @@ class ConversationViewSet(viewsets.ModelViewSet):
         """
         user = self.request.user
         if user.is_staff or user.is_superuser:
-            return Conversation.objects.all()
-        return Conversation.objects.filter(assigned_agent=user)
+            return Conversation.objects.all().select_related('customer', 'assigned_agent')
+        return Conversation.objects.filter(assigned_agent=user).select_related('customer', 'assigned_agent')
+        
+    @cached_response(timeout=60, key_prefix='conversation_list')
+    def list(self, request, *args, **kwargs):
+        """Cache the conversation list for 60 seconds"""
+        return super().list(request, *args, **kwargs)
+        
+    def perform_create(self, serializer):
+        """When creating a conversation, invalidate related caches"""
+        instance = serializer.save()
+        invalidate_model_cache('conversation')
+        return instance
+        
+    def perform_update(self, serializer):
+        """When updating a conversation, invalidate related caches"""
+        instance = serializer.save()
+        invalidate_model_cache('conversation', instance.id)
+        return instance
 
 
 class MessageViewSet(viewsets.ModelViewSet):
     """A viewset for viewing and creating messages within a conversation."""
 
     serializer_class = MessageSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsAgent]
 
     def get_queryset(self):
         # Filter messages by the conversation_id query parameter.
@@ -53,10 +73,23 @@ class MessageViewSet(viewsets.ModelViewSet):
             if Conversation.objects.filter(
                 id=conversation_id, assigned_agent__user=self.request.user,
             ).exists():
-                return Message.objects.filter(conversation_id=conversation_id)
+                return Message.objects.filter(conversation_id=conversation_id).select_related('conversation')
         return (
             Message.objects.none()
         )  # Return no messages if no valid conversation is specified
+        
+    @cached_response(timeout=30, key_prefix='message_list')  # Shorter timeout as messages change frequently
+    def list(self, request, *args, **kwargs):
+        """Cache the message list for 30 seconds"""
+        return super().list(request, *args, **kwargs)
+        
+    def perform_create(self, serializer):
+        """When creating a message, invalidate conversation and message caches"""
+        instance = serializer.save()
+        # Invalidate both conversation and message caches
+        invalidate_model_cache('message', instance.conversation_id)
+        invalidate_model_cache('conversation', instance.conversation_id)
+        return instance
 
     def perform_create(self, serializer):
         """Set the message direction to outbound and associate the agent."""
@@ -73,14 +106,41 @@ class MessageViewSet(viewsets.ModelViewSet):
 
 
 class AgentProfileViewSet(viewsets.ReadOnlyModelViewSet):
-    """A viewset for viewing and managing agent profiles."""
+    """API endpoint that allows agent profiles to be viewed."""
 
+    queryset = AgentProfile.objects.all()
     serializer_class = AgentProfileSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsAgent]
 
     def get_queryset(self):
-        """This view should return the agent profile for the currently authenticated user."""
-        return AgentProfile.objects.filter(user=self.request.user)
+        user = self.request.user
+        if user.is_staff or user.is_superuser:
+            return AgentProfile.objects.all().select_related('user')
+        return AgentProfile.objects.filter(user=user).select_related('user')
+    
+    @cached_response(timeout=300, key_prefix='agent_profile_list')  # Cache for 5 minutes
+    def list(self, request, *args, **kwargs):
+        """Cache the agent profile list"""
+        return super().list(request, *args, **kwargs)
+    
+    @cached_response(timeout=300, key_prefix='agent_profile_detail')
+    def retrieve(self, request, *args, **kwargs):
+        """Cache individual agent profile"""
+        return super().retrieve(request, *args, **kwargs)
+
+    @action(detail=False, methods=["get"])
+    def me(self, request):
+        """Endpoint for current user to get their own profile"""
+        user = request.user
+        # Don't cache this endpoint - it's personal and changes with login state
+        try:
+            profile = AgentProfile.objects.select_related('user').get(user=user)
+            serializer = self.get_serializer(profile)
+            return Response(serializer.data)
+        except AgentProfile.DoesNotExist:
+            return Response(
+                {"detail": "Agent profile not found"}, status=status.HTTP_404_NOT_FOUND
+            )
 
     @action(detail=False, methods=["post"], url_path="set-status")
     def set_status(self, request):
@@ -102,16 +162,19 @@ class AgentProfileViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 class QuickReplyTemplateViewSet(viewsets.ReadOnlyModelViewSet):
-    """A viewset for listing available quick reply templates."""
+    """API endpoint to view Quick Reply Templates."""
 
     serializer_class = QuickReplyTemplateSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsAgent]
 
     def get_queryset(self):
-        """This view should return a list of all the quick reply templates
-        for the currently authenticated user.
-        """
-        return QuickReplyTemplate.objects.filter(agent=self.request.user).order_by(
+        """Return only templates belonging to the current user."""
+        return QuickReplyTemplate.objects.filter(agent=self.request.user).select_related('agent')
+        
+    @cached_response(timeout=600, key_prefix='quick_reply_list')  # Cache for 10 minutes
+    def list(self, request, *args, **kwargs):
+        """Cache quick reply templates as they change infrequently"""
+        return super().list(request, *args, **kwargs).order_by(
             "title",
         )
 
@@ -123,15 +186,27 @@ def dashboard(request):
 
 
 class AgentPerformanceSnapshotViewSet(viewsets.ReadOnlyModelViewSet):
-    """A viewset for viewing agent performance snapshots."""
+    """API endpoint for viewing agent performance metrics."""
 
     serializer_class = AgentPerformanceSnapshotSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsSupervisor]
 
     def get_queryset(self):
-        """This view should return a list of all performance snapshots
-        for the currently authenticated user's agent profile.
-        """
-        return AgentPerformanceSnapshot.objects.filter(
-            agent__user=self.request.user,
-        ).order_by("-period_start")
+        user = self.request.user
+
+        # Admins and supervisors can see all performance data
+        if user.is_staff or user.is_superuser:
+            return AgentPerformanceSnapshot.objects.all().select_related('agent')
+
+        # Agents can only see their own data
+        return AgentPerformanceSnapshot.objects.filter(agent=user).select_related('agent')
+        
+    @cached_response(timeout=600, key_prefix='performance_snapshot_list')  # Cache for 10 minutes
+    def list(self, request, *args, **kwargs):
+        """Cache performance snapshots as they're only updated periodically"""
+        return super().list(request, *args, **kwargs)
+        
+    @cached_response(timeout=600, key_prefix='performance_snapshot_detail')
+    def retrieve(self, request, *args, **kwargs):
+        """Cache individual performance snapshots"""
+        return super().retrieve(request, *args, **kwargs)

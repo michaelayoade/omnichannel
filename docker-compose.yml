@@ -26,6 +26,17 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+      
+  redis-cache:
+    image: redis:7-alpine
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_cache_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   backend:
     build:
@@ -37,6 +48,11 @@ services:
       - media_volume:/app/media
     ports:
       - "8000:8000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/healthz/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
     depends_on:
       - db
       - redis
@@ -91,6 +107,31 @@ services:
       - CELERY_BROKER_URL=redis://redis:6379/0
       - CELERY_RESULT_BACKEND=redis://redis:6379/0
     command: celery -A omnichannel_core beat -l info
+    
+  flower:
+    build:
+      context: .
+      dockerfile: ./docker/backend/Dockerfile
+    command: celery -A omnichannel_core flower --port=5555
+    volumes:
+      - .:/app
+    depends_on:
+      - celery_worker
+      - redis
+    ports:
+      - "5555:5555"
+    env_file:
+      - .env
+    environment:
+      - DB_HOST=db
+      - REDIS_URL=redis://redis:6379
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5555"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   frontend:
     build:
@@ -99,15 +140,30 @@ services:
     volumes:
       - ./frontend/agent-dashboard:/app
       - /app/node_modules
-    ports:
-      - "5173:80"
+    # no direct host exposure; Caddy handles public traffic
     depends_on:
       - backend
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
     environment:
       - VITE_API_BASE_URL=/api
+
+  caddy:
+    image: caddy:2-alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+    depends_on:
+      - backend
+      - frontend
 
 volumes:
   postgres_data:
   redis_data:
+  redis_cache_data:
   static_volume:
   media_volume:
