@@ -1,11 +1,17 @@
 import axios from 'axios';
 
 // Constants for API configuration
+// Resolve API base URL: allow absolute or relative
+const RAW_API_BASE = import.meta.env.VITE_API_BASE_URL || '/api';
+
+// If RAW_API_BASE starts with '/', treat it as same-origin relative path
+const WS_BASE_URL = RAW_API_BASE.startsWith('/')
+  ? window.location.origin.replace(/^http/, 'ws')
+  : RAW_API_BASE.replace('http', 'ws').replace('/api', '');
+
 const API_CONFIG = {
-  BASE_URL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api',
-  WS_BASE_URL: (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api')
-    .replace('http', 'ws')
-    .replace('/api', ''),
+  BASE_URL: RAW_API_BASE,
+  WS_BASE_URL,
   TIMEOUT: 30000, // 30 seconds
   TOKEN_KEY: 'access_token',
   AUTH_HEADER: 'Authorization',
