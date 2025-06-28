@@ -6,7 +6,7 @@
 import { useToast } from '../context/ToastContext';
 
 // Get API base URL from environment variables
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://149.102.135.97:8000/api';
 
 class ApiClient {
   constructor() {
