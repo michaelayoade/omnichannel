@@ -95,7 +95,7 @@ services:
   frontend:
     build:
       context: ./frontend/agent-dashboard
-      dockerfile: ./docker/frontend/Dockerfile
+      dockerfile: ./docker/Dockerfile
     volumes:
       - ./frontend/agent-dashboard:/app
       - /app/node_modules
