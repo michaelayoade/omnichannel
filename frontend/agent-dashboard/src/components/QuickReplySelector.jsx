@@ -1,35 +1,22 @@
-import { useEffect, useState } from 'react';
-import { getQuickReplies } from '../api';
+import { useState } from 'react';
+import { useQuickReplies } from '../hooks/useQuickReplies';
+import QuickReplyManager from './QuickReplyManager';
 
 export default function QuickReplySelector({ onSelect }) {
-  const [replies, setReplies] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const { replies, isLoading } = useQuickReplies();
+  const [showManager, setShowManager] = useState(false);
 
-  useEffect(() => {
-    const fetchReplies = async () => {
-      try {
-        const response = await getQuickReplies();
-        setReplies(response.data);
-      } catch (err) {
-        setError('Failed to fetch quick replies.');
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchReplies();
-  }, []);
-
-  if (loading || error || replies.length === 0) {
+  if (isLoading || replies.length === 0) {
     // Don't render anything if loading, error, or no replies
     return null;
   }
 
   return (
-    <div className="p-4 border-t border-gray-200">
-      <h4 className="text-sm font-semibold mb-2 text-gray-600">Quick Replies</h4>
+    <div className="p-4 border-t border-gray-200 relative">
+      <div className="flex items-center justify-between mb-2">
+        <h4 className="text-sm font-semibold text-gray-600">Quick Replies</h4>
+        <button onClick={() => setShowManager(true)} className="text-xs text-blue-600">Manage</button>
+      </div>
       <div className="flex flex-wrap gap-2">
         {replies.map((reply) => (
           <button
