@@ -16,11 +16,11 @@ export const VALIDATION_RULES = {
 
 /**
  * Validates that a value is not empty
- * @param {string} value - Value to validate
+ * @param {string|null|undefined} value - Value to validate
  * @returns {boolean} - True if valid
  */
 export const isNotEmpty = (value) => {
-  return value !== undefined && value !== null && value.trim() !== '';
+  return value !== undefined && value !== null && String(value).trim() !== '';
 };
 
 /**
@@ -29,8 +29,11 @@ export const isNotEmpty = (value) => {
  * @returns {boolean} - True if valid
  */
 export const isValidEmail = (email) => {
+  if (!email) return false;
+  // More strict email validation
   const re = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-  return re.test(String(email).toLowerCase());
+  const sanitizedEmail = String(email).toLowerCase().trim();
+  return re.test(sanitizedEmail) && sanitizedEmail.length <= 254; // RFC 5321 length limit
 };
 
 /**
@@ -94,15 +97,21 @@ export const meetsMaxLength = (value, maxLength) => {
  * @returns {string} - Sanitized input
  */
 export const sanitizeInput = (input) => {
-  if (!input) return '';
+  if (input === null || input === undefined) return '';
+  
+  // Convert to string and trim
+  const sanitized = String(input).trim();
   
   // Replace potentially dangerous characters
-  return String(input)
+  return sanitized
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;');
+    .replace(/'/g, '&#039;')
+    // Additional protection against script injection
+    .replace(/javascript:/gi, '')
+    .replace(/on\w+\s*=/gi, '');
 };
 
 /**

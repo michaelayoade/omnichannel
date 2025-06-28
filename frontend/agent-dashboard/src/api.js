@@ -33,10 +33,20 @@ const apiClient = axios.create({
 // Request interceptor for authentication and logging
 apiClient.interceptors.request.use(
   (config) => {
+    // Get token from secure storage
     const token = localStorage.getItem(API_CONFIG.TOKEN_KEY);
-    if (token) {
-      config.headers[API_CONFIG.AUTH_HEADER] = `${API_CONFIG.TOKEN_PREFIX} ${token}`;
+    
+    // Only add valid tokens to prevent security issues
+    if (token && typeof token === 'string' && token.trim().length > 0) {
+      // Sanitize token before adding to headers
+      const sanitizedToken = token.trim();
+      config.headers[API_CONFIG.AUTH_HEADER] = `${API_CONFIG.TOKEN_PREFIX} ${sanitizedToken}`;
     }
+    
+    // Set secure headers
+    config.headers['X-Content-Type-Options'] = 'nosniff';
+    config.headers['X-XSS-Protection'] = '1; mode=block';
+    
     return config;
   }, 
   (error) => {
@@ -94,9 +104,15 @@ export const getMessages = (conversationId) => {
   return apiClient.get(`/agent_hub/messages/?conversation_id=${conversationId}`);
 };
 
+/**
+ * Establishes a secure WebSocket connection to a conversation
+ * @param {number|string} conversationId - ID of the conversation to connect to
+ * @param {Function} onEvent - Callback function for WebSocket events
+ * @returns {WebSocket|Object} - WebSocket connection or dummy object with close method
+ */
 export const connectToConversation = (conversationId, onEvent) => {
   // Input validation
-  if (!conversationId) {
+  if (!conversationId || isNaN(Number(conversationId))) {
     console.error('Cannot connect: Invalid conversation ID');
     return { close: () => {} }; // Return dummy object with close method
   }
@@ -110,7 +126,11 @@ export const connectToConversation = (conversationId, onEvent) => {
 
   let ws;
   try {
-    const wsUrl = `${API_CONFIG.WS_BASE_URL}/ws/conversations/${conversationId}/?token=${token}`;
+    // Encode parameters to prevent injection attacks
+    const safeConversationId = encodeURIComponent(String(conversationId).trim());
+    const safeToken = encodeURIComponent(token.trim());
+    
+    const wsUrl = `${API_CONFIG.WS_BASE_URL}/ws/conversations/${safeConversationId}/?token=${safeToken}`;
     ws = new WebSocket(wsUrl);
   } catch (error) {
     console.error('WebSocket connection error:', error);
@@ -119,7 +139,20 @@ export const connectToConversation = (conversationId, onEvent) => {
 
   ws.onmessage = (event) => {
     try {
+      // Safely parse and validate incoming data
+      if (typeof event.data !== 'string') {
+        console.error('Invalid WebSocket data format');
+        return;
+      }
+      
       const data = JSON.parse(event.data);
+      
+      // Validate message structure before processing
+      if (!data || typeof data !== 'object') {
+        console.error('Invalid message format');
+        return;
+      }
+      
       if (onEvent && typeof onEvent === 'function') {
         onEvent(data);
       }

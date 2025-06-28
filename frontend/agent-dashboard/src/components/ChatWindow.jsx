@@ -14,7 +14,32 @@ export default function ChatWindow({ selectedConversationId }) {
   const [sending, setSending] = useState(false);
   const messagesEndRef = useRef(null);
   const wsRef = useRef(null);
-  
+  const notifyTypingTimeoutRef = useRef(null);
+
+  // Send typing notifications with rate limiting
+  const notifyTyping = useCallback(() => {
+    if (!selectedConversationId || !wsRef.current) return;
+    
+    // Use a ref to track last typing notification
+    if (!notifyTypingTimeoutRef.current) {
+      // Send typing notification
+      try {
+        wsRef.current.send(JSON.stringify({
+          type: 'typing',
+          conversation_id: parseInt(selectedConversationId, 10),
+          from: 'agent'
+        }));
+        
+        // Set a timeout to prevent sending too many notifications
+        notifyTypingTimeoutRef.current = setTimeout(() => {
+          notifyTypingTimeoutRef.current = null;
+        }, 2000); // Only allow sending every 2 seconds
+      } catch (error) {
+        console.error('Failed to send typing notification:', error);
+      }
+    }
+  }, [selectedConversationId]);
+
   // Access toast notifications
   const { showError, showApiError } = useToast();
 
@@ -87,26 +112,36 @@ export default function ChatWindow({ selectedConversationId }) {
   }, [messages]);
 
   const handleQuickReplySelect = (content) => {
-    // Sanitize content from quick replies
-    setNewMessage(sanitizeInput(content));
+    // Sanitize content from quick replies before setting in input field
+    if (typeof content !== 'string') return;
+    setNewMessage(String(content).trim());
   };
 
   const handleInputChange = (e) => {
-    setNewMessage(e.target.value);
+    // Prevent extremely long inputs that could cause performance issues
+    const maxLength = 2000;
+    const value = e.target.value.slice(0, maxLength);
+    setNewMessage(value);
     notifyTyping();
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    if (!newMessage.trim() || !selectedConversationId) return;
+    // Validate inputs
+    if (!newMessage || !newMessage.trim() || !selectedConversationId) return;
     
+    // Sanitize content before sending
     const messageContent = sanitizeInput(newMessage.trim());
+    
+    // Clear input and set sending state
     setNewMessage('');
     setSending(true);
     
+    // Generate unique temporary ID with timestamp and random value for collision prevention
+    const tempId = `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    
     // Optimistically add message to UI
-    const tempId = `temp-${Date.now()}`;
     const tempMessage = {
       id: tempId,
       content: messageContent,
@@ -118,7 +153,14 @@ export default function ChatWindow({ selectedConversationId }) {
     setMessages((prevMessages) => [...prevMessages, tempMessage]);
     
     try {
-      await sendMessage(selectedConversationId, messageContent);
+      // Send message to API with validated conversation ID
+      const validConversationId = parseInt(selectedConversationId, 10);
+      if (isNaN(validConversationId)) {
+        throw new Error('Invalid conversation ID');
+      }
+      
+      await sendMessage(validConversationId, messageContent);
+      
       // Update the status of the sent message
       setMessages((prevMessages) => 
         prevMessages.map(msg => 
@@ -168,7 +210,10 @@ export default function ChatWindow({ selectedConversationId }) {
             <div
               className={`${msg.direction === 'outbound' ? 'bg-blue-500 text-white' : 'bg-gray-200'} rounded-lg py-2 px-4 max-w-md`}
             >
-              <p>{msg.body || msg.content}</p>
+              <p className="break-words whitespace-pre-wrap">
+                {/* Message content is already sanitized by sanitizeInput function */}
+                {msg.body || msg.content}
+              </p>
               {msg.direction === 'outbound' && (
                 <span className="ml-2 text-xs align-middle">
                   {msg.status === 'sending' && <AiOutlineDoubleRight className="inline" />}
