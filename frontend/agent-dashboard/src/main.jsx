@@ -8,6 +8,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import ErrorBoundary from './components/ErrorBoundary';
 import { ToastProvider } from './context/ToastContext';
 import { RoleProvider } from './hooks/useRoles';
+import { AuthProvider } from './hooks/useAuth';
 
 // Initialize monitoring
 import sentryService from './services/sentryService';
@@ -97,9 +98,11 @@ ReactDOM.createRoot(document.getElementById('root')).render(
       <ErrorBoundary onError={logErrorToService}>
         <QueryClientProvider client={queryClient}>
           <BrowserRouter>
-            <RoleProvider>
-              <App />
-            </RoleProvider>
+            <AuthProvider>
+              <RoleProvider>
+                <App />
+              </RoleProvider>
+            </AuthProvider>
           </BrowserRouter>
         </QueryClientProvider>
       </ErrorBoundary>
