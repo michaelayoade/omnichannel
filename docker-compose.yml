@@ -137,10 +137,13 @@ services:
     build:
       context: ./frontend/agent-dashboard
       dockerfile: ./docker/Dockerfile
+    environment:
+      - VITE_API_BASE_URL=http://149.102.135.97:8000/api
+    ports:
+      - "5173:80"
     volumes:
       - ./frontend/agent-dashboard:/app
       - /app/node_modules
-    # no direct host exposure; Caddy handles public traffic
     depends_on:
       - backend
     healthcheck:
@@ -148,8 +151,6 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-    environment:
-      - VITE_API_BASE_URL=/api
 
   caddy:
     image: caddy:2-alpine
