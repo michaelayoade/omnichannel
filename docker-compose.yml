@@ -137,9 +137,9 @@ services:
       context: ./frontend/agent-dashboard
       dockerfile: ./docker/Dockerfile
       args:
-        - VITE_API_BASE_URL=http://149.102.135.97:8000/api
+        - VITE_API_BASE_URL=${VITE_API_BASE_URL:-https://marketing.dotmac.ng/api}
     environment:
-      - VITE_API_BASE_URL=http://149.102.135.97:8000/api
+      - VITE_API_BASE_URL=${VITE_API_BASE_URL:-https://marketing.dotmac.ng/api}
     ports:
       - "5173:80"
     volumes:
@@ -154,9 +154,24 @@ services:
       retries: 3
 
 
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    environment:
+      - ACME_AGREE=true
+
 volumes:
   postgres_data:
   redis_data:
   redis_cache_data:
   static_volume:
   media_volume:
+  caddy_data:
+  caddy_config:

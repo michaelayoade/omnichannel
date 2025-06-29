@@ -53,6 +53,7 @@ urlpatterns = [
     path("api/whatsapp/", include("whatsapp_integration.urls")),
     path("api/facebook/", include("facebook_integration.urls")),
     path("api/agent_hub/", include("agent_hub.urls")),
+    path("api/", include("conversations.urls")), # conversations and messages
 ]
 
 # Serve media files in development

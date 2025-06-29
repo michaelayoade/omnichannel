@@ -1,18 +1,35 @@
 {
-  email you@example.com
+  email admin@dotmac.ng
 }
 
-# Replace with your actual domain
-chat.example.com {
-  reverse_proxy /api/* backend:8000
+marketing.dotmac.ng {
+  # Frontend - Vite build
+  @frontend path_regexp ^/(?!api|admin|static|media).*
+  reverse_proxy @frontend frontend:5173
+  handle_path @frontend {
+    # Cache static bundle aggressively
+    header Cache-Control "public, max-age=31536000, immutable"
+  }
+
+  # Django API
+  handle_path /api/* {
+    reverse_proxy backend:8000
+  }
+
+  # WebSocket connections
   reverse_proxy /ws/* backend:8000
+
+  # Flower dashboard
   reverse_proxy /flower/* flower:5555 {
     header_up Host {upstream_hostport}
     header_up X-Real-IP {remote_host}
     header_up X-Forwarded-For {remote_host}
     header_up X-Forwarded-Proto {scheme}
   }
-  reverse_proxy frontend:80
+
+  # Django admin & static/media
+  reverse_proxy backend:8000
+
   encode gzip
   header {
     Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"

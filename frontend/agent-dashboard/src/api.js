@@ -1,13 +1,13 @@
 import axios from 'axios';
 
 // Constants for API configuration
-// Resolve API base URL: allow absolute or relative
+// Resolve API base URL: prefer environment variable, fallback to relative path
 const RAW_API_BASE = import.meta.env.VITE_API_BASE_URL || '/api';
 
-// If RAW_API_BASE starts with '/', treat it as same-origin relative path
+// Derive WebSocket URL from API base URL
 const WS_BASE_URL = RAW_API_BASE.startsWith('/')
   ? window.location.origin.replace(/^http/, 'ws')
-  : RAW_API_BASE.replace('http', 'ws').replace('/api', '');
+  : RAW_API_BASE.replace(/^https?/, 'ws').replace(/\/api$/, '');
 
 const API_CONFIG = {
   BASE_URL: RAW_API_BASE,
@@ -103,11 +103,11 @@ apiClient.interceptors.response.use(
 );
 
 export const getConversations = () => {
-  return apiClient.get('/agent_hub/conversations/');
+  return apiClient.get('/conversations/');
 };
 
 export const getMessages = (conversationId) => {
-  return apiClient.get(`/agent_hub/messages/?conversation_id=${conversationId}`);
+  return apiClient.get(`/messages/?conversation=${conversationId}`);
 };
 
 /**

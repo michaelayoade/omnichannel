@@ -220,3 +220,40 @@ mypy .
 4. Create Celery tasks for background processing
 5. Add comprehensive testing suite
 6. Implement frontend interface
+
+---
+
+## Roadmap & Engineering Approach
+
+This section gives the *big-picture* view of where the project is headed and how we intend to get there.  It is a living document – feel free to open a PR if priorities shift.
+
+### Vision
+Build a single pane of glass where ISP support agents can handle **all** customer conversations (WhatsApp, Facebook, Instagram, Email, Telegram) and escalate seamlessly into ERPNext tickets – all with real-time updates, smart automation, and robust analytics.
+
+### Phased Roadmap (12-month horizon)
+| Phase | Timeline | Theme | High-level Deliverables |
+|-------|----------|-------|-------------------------|
+| **1. Core Communication Engine** | Months 1-2 | Get WhatsApp live | Conversation schema, WhatsApp API integration, basic agent inbox & assignment |
+| **2. Multi-Channel Expansion** | Months 3-4 | 5 channels unified | Facebook Messenger, Instagram DM, Email (IMAP/SMTP), Telegram, unified inbox |
+| **3. ERPNext Ticket Integration** | Months 5-6 | Support workflows | Create/update ERPNext tickets from chats, show ticket status & customer data |
+| **4. Customer Management & Analytics** | Months 7-8 | Insight | 360° customer profiles, tagging, agent/channel performance dashboards |
+| **5. Automation & Workflows** | Months 9-10 | Efficiency | Auto-assignment, SLA alerts, keyword routing, canned templates, follow-ups |
+| **6. Advanced Channel Features** | Months 11-12 | Polish & UX | WhatsApp catalog, IG story replies, rich email editor, mobile-optimised UI |
+
+Success metrics for each phase are defined in *docs/roadmap.md* (to be created) and tracked in GitHub Projects.
+
+### Engineering Principles
+1. **API-first** – every feature exposed via REST / WebSocket; front-end is a thin client.
+2. **Modular services** – separate Django apps per channel, Celery tasks for I/O heavy work.
+3. **Security by default** – least-privilege RBAC, secure cookies, rate-limiting, static analysis.
+4. **12-factor config** – all secrets and URLs via env vars; Docker Compose for local & VPS.
+5. **Quality gates** – lint (ruff, bandit), type-check (mypy), test (pytest) in CI before merge.
+6. **Incremental delivery** – vertical slices per phase; always ship something usable.
+
+### How We Work
+* GitHub Issues → small, demo-able tasks linked to the roadmap.
+* Conventional Commits for clear history (`feat:`, `fix:`, `chore:`).
+* PR template requires description, screenshots (if UI), and checklist ticks.
+* Weekly demo on Friday; roadmap reviewed monthly.
+
+---

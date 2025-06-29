@@ -12,7 +12,7 @@ export default function ConversationList({ onConversationSelect, selectedConvers
     queryKey: ['conversations'],
     queryFn: async () => {
       const response = await getConversations();
-      return response.data.results;
+      return response.data;
     },
   });
 
@@ -41,9 +41,9 @@ export default function ConversationList({ onConversationSelect, selectedConvers
               }`}
               onClick={() => onConversationSelect(conv.id)}
             >
-              <p className="font-semibold">{conv.customer.name || 'Unknown Customer'}</p>
+              <p className="font-semibold">{conv.customer_name || 'Unknown Customer'}</p>
               <p className="text-sm text-gray-600 truncate">
-                Last message placeholder...
+                {conv.last_message_preview || 'No messages yet'}
               </p>
             </li>
           ))
